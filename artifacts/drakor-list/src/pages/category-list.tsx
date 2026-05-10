@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUpload } from "@workspace/object-storage-web";
 import {
   useListMedia, useCreateMedia, useUpdateMedia, useDeleteMedia, useListGenres,
   getListMediaQueryKey, getListGenresQueryKey, getGetMediaStatsQueryKey,
@@ -42,7 +43,7 @@ const schema = z.object({
   totalEpisodes:  z.coerce.number().min(1).optional().or(z.literal("")),
   currentEpisode: z.coerce.number().min(0).optional().or(z.literal("")),
   notes:          z.string().optional(),
-  imageUrl:       z.string().url("URL tidak valid").optional().or(z.literal("")),
+  imageUrl:       z.string().optional(),
 });
 type FormVals = z.infer<typeof schema>;
 
@@ -67,6 +68,15 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
   const [isMovie, setIsMovie] = useState<boolean>(() => isEdit ? item.totalEpisodes == null : false);
 
   const [imgPreview, setImgPreview] = useState<string>(item?.imageUrl ?? "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, isUploading } = useUpload({
+    onSuccess: (res) => {
+      const servingUrl = `/api/storage${res.objectPath}`;
+      form.setValue("imageUrl", servingUrl);
+      setImgPreview(servingUrl);
+    },
+    onError: () => toast({ title: "Gagal upload gambar", variant: "destructive" }),
+  });
 
   const form = useForm<FormVals>({
     resolver: zodResolver(schema),
@@ -214,39 +224,58 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
               </FormItem>
             )} />
 
-            {/* Image URL field with live preview */}
-            <FormField control={form.control} name="imageUrl" render={({ field }) => (
-              <FormItem>
-                <FormLabel><span {...lbl}>URL Gambar / Poster</span></FormLabel>
-                <FormControl>
-                  <input
-                    {...field}
-                    placeholder="https://... (paste URL gambar dari internet)"
-                    {...inp}
-                    data-testid="input-imageUrl"
-                    onChange={e => { field.onChange(e); setImgPreview(e.target.value); }}
+            {/* Poster upload */}
+            <div>
+              <span {...lbl}>Poster / Gambar</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                data-testid="input-imageUpload"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setImgPreview(URL.createObjectURL(file));
+                  await uploadFile(file);
+                  e.target.value = "";
+                }}
+              />
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                    cursor: isUploading ? "not-allowed" : "pointer",
+                    background: "hsla(252,70%,65%,0.12)",
+                    border: "1px solid hsla(252,70%,65%,0.35)",
+                    color: "hsl(252,70%,75%)", fontFamily: "'Inter',sans-serif",
+                    transition: "all 150ms",
+                  }}
+                >
+                  {isUploading ? "⏳ Uploading..." : "📁 Pilih Gambar"}
+                </button>
+                {imgPreview && !isUploading && (
+                  <img
+                    src={imgPreview}
+                    alt="preview"
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    style={{ width: 48, height: 68, objectFit: "cover", borderRadius: 6, border: "1px solid hsl(228,18%,22%)" }}
                   />
-                </FormControl>
-                <FormMessage />
-                {imgPreview && (
-                  <div style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <img
-                      src={imgPreview}
-                      alt="preview"
-                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                      onLoad={e => { (e.currentTarget as HTMLImageElement).style.display = "block"; }}
-                      style={{
-                        width: 56, height: 80, objectFit: "cover", borderRadius: 6,
-                        border: "1px solid hsl(228,18%,20%)", display: "none",
-                      }}
-                    />
-                    <p style={{ fontSize: 11, color: "hsl(220,12%,38%)", marginTop: 4 }}>
-                      Preview muncul kalau URL valid
-                    </p>
-                  </div>
                 )}
-              </FormItem>
-            )} />
+                {imgPreview && (
+                  <button
+                    type="button"
+                    onClick={() => { setImgPreview(""); form.setValue("imageUrl", ""); }}
+                    style={{ fontSize: 11, color: "hsl(220,12%,38%)", background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                  >
+                    ✕ Hapus
+                  </button>
+                )}
+              </div>
+            </div>
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>

@@ -7,9 +7,12 @@
  */
 
 export * from "./categoryStats";
+export * from "./errorEnvelope";
 export * from "./healthStatus";
 export * from "./listMediaParams";
 export * from "./mediaInput";
 export * from "./mediaItem";
 export * from "./mediaStats";
 export * from "./mediaUpdate";
+export * from "./uploadUrlRequest";
+export * from "./uploadUrlResponse";
