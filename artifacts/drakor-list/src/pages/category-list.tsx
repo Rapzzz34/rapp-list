@@ -61,6 +61,9 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
   const update = useUpdateMedia();
   const isEdit = !!item;
 
+  // Detect movie vs series: movie = no totalEpisodes
+  const [isMovie, setIsMovie] = useState<boolean>(() => isEdit ? item.totalEpisodes == null : false);
+
   const form = useForm<FormVals>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -77,12 +80,13 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
   async function onSubmit(v: FormVals) {
     const data = {
       title: v.title, category,
-      genre:          v.genre          || undefined,
-      status:         v.status,
-      rating:         v.rating         === "" ? undefined : Number(v.rating),
-      totalEpisodes:  v.totalEpisodes  === "" ? undefined : Number(v.totalEpisodes),
-      currentEpisode: v.currentEpisode === "" ? undefined : Number(v.currentEpisode),
-      notes:          v.notes          || undefined,
+      genre:   v.genre   || undefined,
+      status:  v.status,
+      rating:  v.rating  === "" ? undefined : Number(v.rating),
+      // movie → hapus episode data
+      totalEpisodes:  isMovie ? undefined : (v.totalEpisodes  === "" ? undefined : Number(v.totalEpisodes)),
+      currentEpisode: isMovie ? undefined : (v.currentEpisode === "" ? undefined : Number(v.currentEpisode)),
+      notes:   v.notes   || undefined,
     };
     try {
       if (isEdit) { await update.mutateAsync({ id: item.id, data }); toast({ title: "Tersimpan" }); }
@@ -99,20 +103,41 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
       fontFamily: "'Inter',sans-serif",
     } as React.CSSProperties,
   };
-
   const lbl = { style: { display: "block", fontSize: 12, fontWeight: 500, color: "hsl(220,12%,45%)", marginBottom: 6 } as React.CSSProperties };
+
+  const toggleStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1, padding: "6px 0", borderRadius: 7, fontSize: 12, fontWeight: 600,
+    cursor: "pointer", transition: "all 150ms", fontFamily: "'Inter',sans-serif",
+    background: active ? "hsla(252,70%,65%,0.15)" : "transparent",
+    color: active ? "hsl(252,70%,75%)" : "hsl(220,12%,42%)",
+    border: active ? "1px solid hsla(252,70%,65%,0.4)" : "1px solid transparent",
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)", borderRadius: 14, maxWidth: 440, maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader>
           <DialogTitle style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 17, color: "hsl(220,18%,91%)" }}>
-            {isEdit ? "Edit" : <><span className="glow-text">+</span> Tambah ke</> } {title}
+            {isEdit ? "Edit" : <><span className="glow-text">+</span> Tambah ke</>} {title}
           </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* ── Movie / Series toggle ── */}
+            <div>
+              <span {...lbl}>Tipe</span>
+              <div style={{ display: "flex", gap: 6, background: "hsl(228,18%,13%)", borderRadius: 9, padding: 4 }}>
+                <button type="button" onClick={() => setIsMovie(false)} style={toggleStyle(!isMovie)} data-testid="toggle-series">
+                  📺 Series / Drama
+                </button>
+                <button type="button" onClick={() => setIsMovie(true)} style={toggleStyle(isMovie)} data-testid="toggle-movie">
+                  🎬 Movie
+                </button>
+              </div>
+            </div>
+
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem>
                 <FormLabel><span {...lbl}>Judul</span></FormLabel>
@@ -158,30 +183,37 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
               )} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-              {([["rating","Rating (1-10)","1–10"],["totalEpisodes","Total Eps","—"],["currentEpisode","Current Ep","—"]] as const).map(([name, label2, ph]) => (
-                <FormField key={name} control={form.control} name={name} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel><span {...lbl}>{label2}</span></FormLabel>
-                    <FormControl>
-                      <input {...field} type="number" min={name === "currentEpisode" ? 0 : 1} max={name === "rating" ? 10 : undefined} placeholder={ph} {...inp} data-testid={`input-${name}`} />
-                    </FormControl>
-                  </FormItem>
-                )} />
-              ))}
-            </div>
+            {/* Episode fields — hanya untuk series */}
+            {!isMovie && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {([["totalEpisodes","Total Episode","—"],["currentEpisode","Episode Sekarang","0"]] as const).map(([name, label2, ph]) => (
+                  <FormField key={name} control={form.control} name={name} render={({ field }) => (
+                    <FormItem>
+                      <FormLabel><span {...lbl}>{label2}</span></FormLabel>
+                      <FormControl>
+                        <input {...field} type="number" min={name === "currentEpisode" ? 0 : 1} placeholder={ph} {...inp} data-testid={`input-${name}`} />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                ))}
+              </div>
+            )}
+
+            {/* Rating */}
+            <FormField control={form.control} name="rating" render={({ field }) => (
+              <FormItem>
+                <FormLabel><span {...lbl}>Rating (1–10)</span></FormLabel>
+                <FormControl>
+                  <input {...field} type="number" min={1} max={10} placeholder="Nilai 1–10" {...inp} data-testid="input-rating" />
+                </FormControl>
+              </FormItem>
+            )} />
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>
                 <FormLabel><span {...lbl}>Catatan</span></FormLabel>
                 <FormControl>
-                  <textarea
-                    {...field}
-                    rows={2}
-                    placeholder="Catatan pribadi..."
-                    data-testid="input-notes"
-                    style={{ ...inp.style, resize: "none" }}
-                  />
+                  <textarea {...field} rows={2} placeholder="Catatan pribadi..." data-testid="input-notes" style={{ ...inp.style, resize: "none" }} />
                 </FormControl>
               </FormItem>
             )} />
@@ -594,6 +626,7 @@ export function CategoryList({ category, title }: { category: string; title: str
 
       {/* ── Dialogs ── */}
       <ItemDialog
+        key={editItem?.id ?? "new"}
         open={dlgOpen} onOpenChange={setDlgOpen}
         item={editItem} category={category} title={title}
         onSuccess={onFormDone}
