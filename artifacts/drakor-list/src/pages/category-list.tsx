@@ -952,44 +952,95 @@ export function CategoryList({ category, title }: { category: string; title: str
             const st = (it.status as Status) in STATUS_CONFIG ? it.status as Status : "plan-to-watch";
             const cfg = STATUS_CONFIG[st];
             const Icon = cfg.icon;
+            const initials = it.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
             return (
-              <div key={it.id} className={cn("surface-sm", cfg.stripe)} style={{ display: "flex", flexDirection: "column", overflow: "hidden", padding: 0 }}>
-                {/* Poster */}
-                <div style={{ position: "relative", aspectRatio: "2/3", background: "hsl(228,20%,12%)" }}>
+              <div key={it.id} style={{ display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: 12, background: "hsl(228,22%,10%)", border: "1px solid hsl(228,18%,16%)" }}>
+                {/* ── Poster ── */}
+                <div style={{ position: "relative", aspectRatio: "2/3", overflow: "hidden" }}>
                   {it.imageUrl ? (
-                    <img src={it.imageUrl} alt={it.title} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: st === "dropped" ? 0.4 : 1 }} />
+                    <img
+                      src={it.imageUrl}
+                      alt={it.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", opacity: st === "dropped" ? 0.35 : 1, display: "block" }}
+                    />
                   ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Icon style={{ width: 28, height: 28, color: "hsl(220,12%,25%)" }} />
+                    /* Placeholder gradient */
+                    <div style={{
+                      width: "100%", height: "100%",
+                      background: `linear-gradient(135deg, hsl(228,22%,13%) 0%, hsl(252,30%,18%) 100%)`,
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                    }}>
+                      <span style={{ fontSize: 28, fontWeight: 800, fontFamily: "'Sora',sans-serif", color: "hsla(252,60%,70%,0.25)", letterSpacing: 1 }}>{initials}</span>
+                      <Icon style={{ width: 20, height: 20, color: "hsla(252,60%,70%,0.15)" }} />
                     </div>
                   )}
-                  {/* Status badge overlay */}
-                  <span className={cfg.badge} style={{ position: "absolute", top: 6, left: 6, display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, fontSize: 10, fontWeight: 500 }}>
-                    <Icon className="w-2.5 h-2.5" />{cfg.label}
-                  </span>
-                  {/* Action buttons */}
-                  <div style={{ position: "absolute", top: 6, right: 6, display: "flex", flexDirection: "column", gap: 4 }}>
-                    <button onClick={() => openEdit(it)} style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", background: "hsla(228,22%,7%,0.85)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,55%)", cursor: "pointer" }}>
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                    <button onClick={() => setDelItem(it)} style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", background: "hsla(0,65%,55%,0.15)", border: "1px solid hsla(0,65%,55%,0.3)", color: "hsl(0,60%,60%)", cursor: "pointer" }}>
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                  {/* Rating */}
-                  {it.rating && (
-                    <span style={{ position: "absolute", bottom: 6, right: 6, display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: "hsl(40,85%,62%)", background: "hsla(228,22%,7%,0.85)", padding: "2px 6px", borderRadius: 6 }}>
-                      <Star className="w-3 h-3" style={{ fill: "hsl(40,85%,62%)" }} />{it.rating}
+
+                  {/* Rating pill — top-right, only when has image */}
+                  {it.rating != null && it.imageUrl && (
+                    <span style={{
+                      position: "absolute", top: 7, right: 7,
+                      display: "inline-flex", alignItems: "center", gap: 3,
+                      fontSize: 11, fontWeight: 700, color: "hsl(40,85%,62%)",
+                      background: "hsla(228,28%,6%,0.82)", backdropFilter: "blur(4px)",
+                      padding: "2px 7px", borderRadius: 20,
+                    }}>
+                      <Star className="w-2.5 h-2.5" style={{ fill: "hsl(40,85%,62%)" }} />{it.rating}
                     </span>
                   )}
+
+                  {/* Gradient scrim at bottom for dropped/no-image state */}
+                  {st !== "watching" && st !== "plan-to-watch" && it.imageUrl && (
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, hsla(228,22%,7%,0.6) 0%, transparent 50%)" }} />
+                  )}
                 </div>
-                {/* Title & meta */}
-                <div style={{ padding: "8px 10px 10px" }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, fontFamily: "'Sora',sans-serif", color: st === "dropped" ? "hsl(220,12%,38%)" : "hsl(220,18%,88%)", textDecoration: st === "dropped" ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>
+
+                {/* ── Info + Actions ── */}
+                <div style={{ padding: "9px 10px 10px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+                  {/* Status badge */}
+                  <span className={cfg.badge} style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 20, fontSize: 9, fontWeight: 600 }}>
+                    <Icon className="w-2 h-2" />{cfg.label}
+                  </span>
+
+                  {/* Title */}
+                  <p style={{
+                    fontSize: 12, fontWeight: 700, fontFamily: "'Sora',sans-serif", lineHeight: 1.3,
+                    color: st === "dropped" ? "hsl(220,12%,32%)" : "hsl(220,18%,90%)",
+                    textDecoration: st === "dropped" ? "line-through" : "none",
+                    overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  }}>
                     {it.title}
                   </p>
-                  {it.genre && <p style={{ fontSize: 10, color: "hsl(220,12%,38%)" }}>{it.genre}</p>}
-                  {it.totalEpisodes && <p style={{ fontSize: 10, color: "hsl(220,12%,35%)", marginTop: 1 }}>Ep {it.currentEpisode ?? 0}/{it.totalEpisodes}</p>}
+
+                  {/* Genre / episode */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: 1 }}>
+                    {it.genre && <span style={{ fontSize: 9, color: "hsl(220,12%,35%)", fontWeight: 500 }}>{it.genre}</span>}
+                    {it.totalEpisodes != null && (
+                      <span style={{ fontSize: 9, color: "hsl(220,12%,30%)" }}>
+                        Ep {it.currentEpisode ?? 0}/{it.totalEpisodes}
+                      </span>
+                    )}
+                    {it.rating != null && !it.imageUrl && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 10, color: "hsl(40,85%,60%)", fontWeight: 700, marginTop: 2 }}>
+                        <Star className="w-2.5 h-2.5" style={{ fill: "hsl(40,85%,60%)" }} />{it.rating}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: 5, marginTop: "auto", paddingTop: 6 }}>
+                    <button
+                      onClick={() => openEdit(it)}
+                      style={{ flex: 1, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,52%)", cursor: "pointer", fontSize: 10, fontWeight: 500, fontFamily: "'Inter',sans-serif" }}
+                    >
+                      <Pencil className="w-2.5 h-2.5" />Edit
+                    </button>
+                    <button
+                      onClick={() => setDelItem(it)}
+                      style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", background: "hsla(0,65%,55%,0.08)", border: "1px solid hsla(0,65%,45%,0.25)", color: "hsl(0,60%,55%)", cursor: "pointer", flexShrink: 0 }}
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

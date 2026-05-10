@@ -1,9 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { Tv, BookOpen, Clapperboard, MonitorPlay, LayoutDashboard, BarChart2, Search } from "lucide-react";
+import { Tv, BookOpen, Clapperboard, MonitorPlay, Home, BarChart2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { path: "/",             label: "Dashboard",    icon: LayoutDashboard },
+  { path: "/",             label: "Dashboard",    icon: Home },
   { path: "/drakor",       label: "K-Dramas",     icon: Tv },
   { path: "/webtoon",      label: "Webtoons",     icon: BookOpen },
   { path: "/short-dracin", label: "Short Dracin", icon: Clapperboard },
