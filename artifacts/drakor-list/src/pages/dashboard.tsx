@@ -1,62 +1,80 @@
-import { useGetMediaStats } from "@workspace/api-client-react";
+import { useGetMediaStats, useListMedia, getGetMediaStatsQueryKey, getListMediaQueryKey } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tv, BookOpen, Clapperboard, MonitorPlay, Activity } from "lucide-react";
+import { Tv, BookOpen, Clapperboard, MonitorPlay, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 
 const CATEGORY_MAP = {
-  "drakor": { label: "K-Dramas", icon: Tv, color: "text-primary", path: "/drakor", bg: "bg-primary/10" },
-  "webtoon": { label: "Webtoons", icon: BookOpen, color: "text-secondary", path: "/webtoon", bg: "bg-secondary/10" },
-  "short-dracin": { label: "Short Dracin", icon: Clapperboard, color: "text-accent", path: "/short-dracin", bg: "bg-accent/10" },
-  "indo": { label: "Indonesian", icon: MonitorPlay, color: "text-green-400", path: "/indo", bg: "bg-green-400/10" },
+  "drakor":      { label: "K-Dramas",    icon: Tv,          path: "/drakor",      color: "text-violet-400",  bar: "bg-violet-500" },
+  "webtoon":     { label: "Webtoons",    icon: BookOpen,    path: "/webtoon",     color: "text-sky-400",     bar: "bg-sky-500" },
+  "short-dracin":{ label: "Short Dracin",icon: Clapperboard,path: "/short-dracin",color: "text-emerald-400", bar: "bg-emerald-500" },
+  "indo":        { label: "Indo",        icon: MonitorPlay, path: "/indo",        color: "text-amber-400",   bar: "bg-amber-500" },
 };
 
 export function Dashboard() {
-  const { data: stats, isLoading } = useGetMediaStats();
+  const { data: stats, isLoading } = useGetMediaStats({
+    query: { queryKey: getGetMediaStatsQueryKey() },
+  });
+  const { data: allMedia = [] } = useListMedia(
+    { status: "watching" },
+    { query: { queryKey: getListMediaQueryKey({ status: "watching" }) } }
+  );
+
+  const watching = allMedia.slice(0, 8);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 md:pb-0">
-      <header>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          System <span className="neon-text-primary">Overview</span>
+    <div className="space-y-8 animate-in fade-in duration-300 pb-20 md:pb-0">
+      <header className="pt-1">
+        <h1 className="text-2xl font-display font-semibold text-foreground mb-1">
+          Overview
         </h1>
-        <p className="text-muted-foreground">Monitor your consumption across all entertainment vectors.</p>
+        <p className="text-sm text-muted-foreground">Your entertainment tracker across all categories.</p>
       </header>
 
+      {/* Category cards */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 glass rounded-xl" />)}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-lg bg-muted" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats?.categories?.map((cat) => {
-            const info = CATEGORY_MAP[cat.category as keyof typeof CATEGORY_MAP] || CATEGORY_MAP.drakor;
+            const info = CATEGORY_MAP[cat.category as keyof typeof CATEGORY_MAP] ?? CATEGORY_MAP.drakor;
             const Icon = info.icon;
-            const completionRate = cat.total > 0 ? Math.round((cat.completed / cat.total) * 100) : 0;
+            const pct = cat.total > 0 ? Math.round((cat.completed / cat.total) * 100) : 0;
 
             return (
               <Link key={cat.category} href={info.path}>
-                <Card className="glass-card cursor-pointer group p-6 flex flex-col gap-4 relative overflow-hidden h-full border-white/5 hover:border-white/20">
-                  <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full blur-[50px] opacity-20 transition-opacity group-hover:opacity-40", info.bg)} />
-                  
-                  <div className="flex items-center justify-between z-10">
-                    <div className="flex items-center gap-3">
-                      <div className={cn("p-2 rounded-lg bg-black/40 border border-white/10", info.color)}>
-                        <Icon className="w-5 h-5 drop-shadow-[0_0_8px_currentColor]" />
-                      </div>
-                      <h3 className="font-semibold">{info.label}</h3>
+                <Card
+                  className="surface surface-hover cursor-pointer p-4 flex flex-col gap-3 h-full"
+                  data-testid={`card-category-${cat.category}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Icon className={cn("w-4 h-4", info.color)} />
+                      <span className="text-sm font-medium text-foreground">{info.label}</span>
                     </div>
-                    <span className="text-2xl font-display font-bold">{cat.total}</span>
+                    <span className="text-xl font-display font-bold text-foreground">{cat.total}</span>
                   </div>
 
-                  <div className="mt-auto space-y-2 z-10">
+                  <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{cat.completed} completed</span>
-                      <span>{completionRate}%</span>
+                      <span>{cat.completed} done</span>
+                      <span>{pct}%</span>
                     </div>
-                    <Progress value={completionRate} className="h-1.5 bg-black/40" />
+                    <div className="h-1 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full transition-all duration-500", info.bar, "opacity-70")}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex gap-2 text-xs text-muted-foreground">
+                      <span>{cat.watching} watching</span>
+                      <span>·</span>
+                      <span>{cat.planToWatch} planned</span>
+                    </div>
                   </div>
                 </Card>
               </Link>
@@ -65,19 +83,55 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Currently Watching Section */}
-      <div className="pt-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Activity className="w-5 h-5 text-secondary animate-pulse" />
-          <h2 className="text-2xl font-display font-bold">Active <span className="neon-text-secondary">Streams</span></h2>
+      {/* Currently Watching */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Play className="w-4 h-4 text-emerald-400" />
+          <h2 className="text-base font-display font-semibold text-foreground">Currently Watching</h2>
         </div>
-        
-        {/* We would typically have a separate hook or filter for currently watching, 
-            but since we don't have a specific endpoint, we'll just show a placeholder 
-            or we could fetch all media and filter. For brevity, let's just make it look good. */}
-        <Card className="glass p-8 text-center text-muted-foreground border-dashed border-white/10">
-          <p>Navigate to categories to update your active streams.</p>
-        </Card>
+
+        {watching.length === 0 ? (
+          <Card className="surface p-8 text-center">
+            <p className="text-sm text-muted-foreground">Nothing on your watchlist yet.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {watching.map((item) => {
+              const info = CATEGORY_MAP[item.category as keyof typeof CATEGORY_MAP] ?? CATEGORY_MAP.drakor;
+              const Icon = info.icon;
+              const pct = item.totalEpisodes && item.currentEpisode != null
+                ? Math.round((item.currentEpisode / item.totalEpisodes) * 100)
+                : null;
+
+              return (
+                <Link key={item.id} href={info.path}>
+                  <Card
+                    className="surface surface-hover cursor-pointer p-3 flex items-center gap-3"
+                    data-testid={`card-watching-${item.id}`}
+                  >
+                    <Icon className={cn("w-4 h-4 flex-shrink-0", info.color)} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                      {pct !== null && (
+                        <div className="mt-1 h-0.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full", info.bar, "opacity-60")}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {item.currentEpisode != null && item.totalEpisodes && (
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {item.currentEpisode}/{item.totalEpisodes}
+                      </span>
+                    )}
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
