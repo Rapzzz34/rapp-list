@@ -29,6 +29,11 @@ export interface MediaItem {
   totalEpisodes?: number | null;
   /** @nullable */
   currentEpisode?: number | null;
+  /**
+   * URL to poster/cover image
+   * @nullable
+   */
+  imageUrl?: string | null;
   createdAt: string;
 }
 
@@ -42,6 +47,7 @@ export interface MediaInput {
   notes?: string;
   totalEpisodes?: number;
   currentEpisode?: number;
+  imageUrl?: string;
 }
 
 export interface MediaUpdate {
@@ -54,6 +60,7 @@ export interface MediaUpdate {
   notes?: string;
   totalEpisodes?: number;
   currentEpisode?: number;
+  imageUrl?: string;
 }
 
 export interface CategoryStats {

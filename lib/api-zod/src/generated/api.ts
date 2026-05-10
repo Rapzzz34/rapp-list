@@ -37,6 +37,7 @@ export const ListMediaResponseItem = zod.object({
   notes: zod.string().nullish(),
   totalEpisodes: zod.number().nullish(),
   currentEpisode: zod.number().nullish(),
+  imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
   createdAt: zod.string(),
 });
 export const ListMediaResponse = zod.array(ListMediaResponseItem);
@@ -54,6 +55,7 @@ export const CreateMediaBody = zod.object({
   notes: zod.string().optional(),
   totalEpisodes: zod.number().optional(),
   currentEpisode: zod.number().optional(),
+  imageUrl: zod.string().optional(),
 });
 
 /**
@@ -75,6 +77,7 @@ export const GetMediaResponse = zod.object({
   notes: zod.string().nullish(),
   totalEpisodes: zod.number().nullish(),
   currentEpisode: zod.number().nullish(),
+  imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
   createdAt: zod.string(),
 });
 
@@ -94,6 +97,7 @@ export const UpdateMediaBody = zod.object({
   notes: zod.string().optional(),
   totalEpisodes: zod.number().optional(),
   currentEpisode: zod.number().optional(),
+  imageUrl: zod.string().optional(),
 });
 
 export const UpdateMediaResponse = zod.object({
@@ -108,6 +112,7 @@ export const UpdateMediaResponse = zod.object({
   notes: zod.string().nullish(),
   totalEpisodes: zod.number().nullish(),
   currentEpisode: zod.number().nullish(),
+  imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
   createdAt: zod.string(),
 });
 

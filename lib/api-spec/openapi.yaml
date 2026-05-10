@@ -199,6 +199,9 @@ components:
           type: ["integer", "null"]
         currentEpisode:
           type: ["integer", "null"]
+        imageUrl:
+          type: ["string", "null"]
+          description: URL to poster/cover image
         createdAt:
           type: string
 
@@ -223,6 +226,8 @@ components:
           type: integer
         currentEpisode:
           type: integer
+        imageUrl:
+          type: string
 
     MediaUpdate:
       type: object
@@ -244,6 +249,8 @@ components:
           type: integer
         currentEpisode:
           type: integer
+        imageUrl:
+          type: string
 
     CategoryStats:
       type: object

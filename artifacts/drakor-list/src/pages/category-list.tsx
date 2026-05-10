@@ -42,13 +42,15 @@ const schema = z.object({
   totalEpisodes:  z.coerce.number().min(1).optional().or(z.literal("")),
   currentEpisode: z.coerce.number().min(0).optional().or(z.literal("")),
   notes:          z.string().optional(),
+  imageUrl:       z.string().url("URL tidak valid").optional().or(z.literal("")),
 });
 type FormVals = z.infer<typeof schema>;
 
 interface Item {
   id: number; title: string; category: string; genre?: string | null;
   status: string; rating?: number | null; notes?: string | null;
-  totalEpisodes?: number | null; currentEpisode?: number | null; createdAt: string;
+  totalEpisodes?: number | null; currentEpisode?: number | null;
+  imageUrl?: string | null; createdAt: string;
 }
 
 /* ── Form dialog ── */
@@ -64,6 +66,8 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
   // Detect movie vs series: movie = no totalEpisodes
   const [isMovie, setIsMovie] = useState<boolean>(() => isEdit ? item.totalEpisodes == null : false);
 
+  const [imgPreview, setImgPreview] = useState<string>(item?.imageUrl ?? "");
+
   const form = useForm<FormVals>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -74,6 +78,7 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
       totalEpisodes:  item?.totalEpisodes  ?? "",
       currentEpisode: item?.currentEpisode ?? "",
       notes:          item?.notes          ?? "",
+      imageUrl:       item?.imageUrl       ?? "",
     },
   });
 
@@ -83,10 +88,10 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
       genre:   v.genre   || undefined,
       status:  v.status,
       rating:  v.rating  === "" ? undefined : Number(v.rating),
-      // movie → hapus episode data
       totalEpisodes:  isMovie ? undefined : (v.totalEpisodes  === "" ? undefined : Number(v.totalEpisodes)),
       currentEpisode: isMovie ? undefined : (v.currentEpisode === "" ? undefined : Number(v.currentEpisode)),
-      notes:   v.notes   || undefined,
+      notes:    v.notes    || undefined,
+      imageUrl: v.imageUrl || undefined,
     };
     try {
       if (isEdit) { await update.mutateAsync({ id: item.id, data }); toast({ title: "Tersimpan" }); }
@@ -209,6 +214,40 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
               </FormItem>
             )} />
 
+            {/* Image URL field with live preview */}
+            <FormField control={form.control} name="imageUrl" render={({ field }) => (
+              <FormItem>
+                <FormLabel><span {...lbl}>URL Gambar / Poster</span></FormLabel>
+                <FormControl>
+                  <input
+                    {...field}
+                    placeholder="https://... (paste URL gambar dari internet)"
+                    {...inp}
+                    data-testid="input-imageUrl"
+                    onChange={e => { field.onChange(e); setImgPreview(e.target.value); }}
+                  />
+                </FormControl>
+                <FormMessage />
+                {imgPreview && (
+                  <div style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <img
+                      src={imgPreview}
+                      alt="preview"
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                      onLoad={e => { (e.currentTarget as HTMLImageElement).style.display = "block"; }}
+                      style={{
+                        width: 56, height: 80, objectFit: "cover", borderRadius: 6,
+                        border: "1px solid hsl(228,18%,20%)", display: "none",
+                      }}
+                    />
+                    <p style={{ fontSize: 11, color: "hsl(220,12%,38%)", marginTop: 4 }}>
+                      Preview muncul kalau URL valid
+                    </p>
+                  </div>
+                )}
+              </FormItem>
+            )} />
+
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>
                 <FormLabel><span {...lbl}>Catatan</span></FormLabel>
@@ -251,36 +290,70 @@ function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp }: {
   return (
     <div
       className={cn("surface-sm", cfg.stripe)}
-      style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}
+      style={{ padding: "12px 14px", display: "flex", gap: 12, alignItems: "flex-start" }}
       data-testid={`card-media-${item.id}`}
     >
-      {/* Status toggle button */}
-      <button
-        onClick={() => onStatus(CYCLE[st])}
-        title="Klik untuk ganti status"
-        data-testid={`button-status-toggle-${item.id}`}
-        style={{
-          flexShrink: 0, marginTop: 2,
-          width: 22, height: 22, borderRadius: "50%",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", border: "none",
-          background: st === "completed" ? "hsla(252,70%,60%,0.2)"
-                     : st === "watching"  ? "hsla(155,60%,45%,0.15)"
-                     : st === "dropped"   ? "hsla(220,10%,40%,0.15)"
-                     :                     "hsla(214,80%,55%,0.1)",
-          transition: "opacity 150ms",
-        }}
-      >
-        <Icon
-          className="w-3 h-3"
+      {/* Poster thumbnail */}
+      <div style={{ flexShrink: 0, position: "relative" }}>
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.title}
+            onError={e => {
+              const el = e.currentTarget as HTMLImageElement;
+              el.style.display = "none";
+              (el.nextElementSibling as HTMLElement | null)?.style && ((el.nextElementSibling as HTMLElement).style.display = "flex");
+            }}
+            style={{
+              width: 44, height: 62, objectFit: "cover", borderRadius: 6,
+              border: "1px solid hsl(228,18%,18%)",
+              opacity: st === "dropped" ? 0.4 : 1,
+            }}
+          />
+        ) : null}
+        {/* Placeholder shown when no image or image fails */}
+        <div style={{
+          width: 44, height: 62, borderRadius: 6,
+          background: st === "completed" ? "hsla(252,70%,60%,0.08)"
+                    : st === "watching"  ? "hsla(155,60%,45%,0.08)"
+                    : st === "dropped"   ? "hsla(220,10%,40%,0.06)"
+                    :                     "hsla(214,80%,55%,0.06)",
+          border: "1px solid hsl(228,18%,18%)",
+          display: item.imageUrl ? "none" : "flex",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <Icon className="w-4 h-4" style={{
+            color: st === "completed" ? "hsl(252,70%,50%)"
+                 : st === "watching"  ? "hsl(155,60%,45%)"
+                 : st === "dropped"   ? "hsl(220,10%,35%)"
+                 :                     "hsl(214,80%,45%)",
+          }} />
+        </div>
+
+        {/* Status toggle — small circle over poster corner */}
+        <button
+          onClick={() => onStatus(CYCLE[st])}
+          title="Klik untuk ganti status"
+          data-testid={`button-status-toggle-${item.id}`}
           style={{
+            position: "absolute", bottom: -6, right: -6,
+            width: 18, height: 18, borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", border: "1px solid hsl(228,18%,14%)",
+            background: st === "completed" ? "hsl(228,20%,10%)"
+                       : st === "watching"  ? "hsl(228,20%,10%)"
+                       : st === "dropped"   ? "hsl(228,20%,10%)"
+                       :                     "hsl(228,20%,10%)",
+          }}
+        >
+          <Icon className="w-2.5 h-2.5" style={{
             color: st === "completed" ? "hsl(252,70%,72%)"
                  : st === "watching"  ? "hsl(155,60%,60%)"
                  : st === "dropped"   ? "hsl(220,10%,48%)"
                  :                     "hsl(214,80%,65%)",
-          }}
-        />
-      </button>
+          }} />
+        </button>
+      </div>
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>

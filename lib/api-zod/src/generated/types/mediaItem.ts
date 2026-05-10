@@ -26,5 +26,10 @@ export interface MediaItem {
   totalEpisodes?: number | null;
   /** @nullable */
   currentEpisode?: number | null;
+  /**
+   * URL to poster/cover image
+   * @nullable
+   */
+  imageUrl?: string | null;
   createdAt: string;
 }

@@ -16,4 +16,5 @@ export interface MediaUpdate {
   notes?: string;
   totalEpisodes?: number;
   currentEpisode?: number;
+  imageUrl?: string;
 }

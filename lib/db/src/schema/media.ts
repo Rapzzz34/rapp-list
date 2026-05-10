@@ -12,6 +12,7 @@ export const mediaTable = pgTable("media", {
   notes: text("notes"),
   totalEpisodes: integer("total_episodes"),
   currentEpisode: integer("current_episode"),
+  imageUrl: text("image_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
