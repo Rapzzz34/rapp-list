@@ -3,11 +3,11 @@ import { Tv, BookOpen, Clapperboard, MonitorPlay, LayoutDashboard } from "lucide
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { path: "/",            label: "Dashboard",   icon: LayoutDashboard },
-  { path: "/drakor",      label: "K-Dramas",    icon: Tv },
-  { path: "/webtoon",     label: "Webtoons",    icon: BookOpen },
-  { path: "/short-dracin",label: "Short Dracin",icon: Clapperboard },
-  { path: "/indo",        label: "Indo",        icon: MonitorPlay },
+  { path: "/",             label: "Dashboard",    icon: LayoutDashboard },
+  { path: "/drakor",       label: "K-Dramas",     icon: Tv },
+  { path: "/webtoon",      label: "Webtoons",     icon: BookOpen },
+  { path: "/short-dracin", label: "Short Dracin", icon: Clapperboard },
+  { path: "/indo",         label: "Indo",         icon: MonitorPlay },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -15,72 +15,76 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
-      {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 hidden md:flex flex-col sidebar-glass">
+      {/* ── Sidebar ── */}
+      <aside
+        className="w-52 flex-shrink-0 hidden md:flex flex-col"
+        style={{ background: "hsl(228,22%,6%)", borderRight: "1px solid hsl(228,18%,13%)" }}
+      >
         {/* Logo */}
-        <div className="h-14 flex items-center px-5 border-b border-white/5">
-          <Link href="/" className="flex items-center gap-2.5 cursor-pointer group" data-testid="link-home">
-            <div className="w-7 h-7 rounded-md flex items-center justify-center border border-primary/30 bg-primary/10 group-hover:border-primary/50 transition-colors">
-              <Tv className="w-3.5 h-3.5 text-primary" style={{ filter: "drop-shadow(0 0 6px hsl(185,80%,52%))" }} />
+        <div className="h-14 flex items-center px-5" style={{ borderBottom: "1px solid hsl(228,18%,13%)" }}>
+          <Link href="/" data-testid="link-home" style={{ textDecoration: "none" }}>
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{
+                  background: "hsla(252,70%,65%,0.12)",
+                  border: "1px solid hsla(252,70%,65%,0.3)",
+                }}
+              >
+                <Tv className="w-3.5 h-3.5" style={{ color: "hsl(252,70%,72%)" }} />
+              </div>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: 15, letterSpacing: "-0.3px", color: "hsl(220,18%,91%)" }}>
+                Neon<span className="glow-text">Watch</span>
+              </span>
             </div>
-            <span className="font-display font-bold text-[15px] tracking-wide text-foreground">
-              Neon<span className="neon-text">Watch</span>
-            </span>
           </Link>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5">
-          {NAV_ITEMS.map((item) => {
-            const isActive = location === item.path;
-            const Icon = item.icon;
+        <nav className="flex-1 p-3 flex flex-col gap-0.5">
+          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+            const active = location === path;
             return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150",
-                  isActive
-                    ? "nav-active pl-[10px]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/4 border-l-2 border-transparent"
-                )}
-                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
-                {item.label}
+              <Link key={path} href={path} data-testid={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`} style={{ textDecoration: "none" }}>
+                <div className={cn("nav-item", active && "nav-item-active")}>
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {label}
+                </div>
               </Link>
             );
           })}
         </nav>
 
-        <div className="px-5 py-4 border-t border-white/5">
-          <p className="text-[11px] text-muted-foreground/60 tracking-wide uppercase font-medium">Personal tracker</p>
+        <div className="px-5 py-4" style={{ borderTop: "1px solid hsl(228,18%,13%)" }}>
+          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: "hsl(220,12%,30%)", textTransform: "uppercase" }}>
+            Personal Tracker
+          </p>
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 relative overflow-y-auto overflow-x-hidden">
-        <div className="min-h-full p-5 md:p-8 max-w-4xl mx-auto">
+      {/* ── Page ── */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="min-h-full max-w-3xl mx-auto px-5 md:px-10 py-8">
           {children}
         </div>
       </main>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 sidebar-glass border-t border-white/5 flex items-center justify-around px-1 z-50">
-        {NAV_ITEMS.map((item) => {
-          const isActive = location === item.path;
-          const Icon = item.icon;
+      {/* ── Mobile bottom nav ── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around z-50"
+        style={{ height: 56, background: "hsl(228,22%,6%)", borderTop: "1px solid hsl(228,18%,13%)" }}
+      >
+        {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+          const active = location === path;
           return (
-            <Link
-              key={item.path}
-              href={item.path}
-              className={cn(
-                "flex flex-col items-center justify-center w-full h-full gap-1",
-                isActive ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <Icon className="w-5 h-5" style={isActive ? { filter: "drop-shadow(0 0 6px hsl(185,80%,52%))" } : undefined} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+            <Link key={path} href={path} style={{ textDecoration: "none", flex: 1 }}>
+              <div
+                className="flex flex-col items-center justify-center h-full gap-1"
+                style={{ color: active ? "hsl(252,70%,72%)" : "hsl(220,12%,40%)" }}
+              >
+                <Icon className="w-5 h-5" />
+                <span style={{ fontSize: 10, fontWeight: 500 }}>{label}</span>
+              </div>
             </Link>
           );
         })}

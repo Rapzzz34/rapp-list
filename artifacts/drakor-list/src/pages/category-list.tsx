@@ -4,38 +4,38 @@ import {
   useListMedia, useCreateMedia, useUpdateMedia, useDeleteMedia, useListGenres,
   getListMediaQueryKey, getListGenresQueryKey, getGetMediaStatsQueryKey,
 } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Search, Plus, Pencil, Trash2, CheckCircle2, Clock, Play, XCircle, Star } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, CheckCircle2, Play, Clock, XCircle, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-type MediaStatus = "plan-to-watch" | "watching" | "completed" | "dropped";
+type Status = "plan-to-watch" | "watching" | "completed" | "dropped";
 
-const STATUS_OPTIONS: { value: MediaStatus; label: string; cls: string; icon: React.ElementType; dot: string }[] = [
-  { value: "plan-to-watch", label: "Plan to Watch", cls: "status-plan",      icon: Clock,        dot: "bg-sky-400" },
-  { value: "watching",      label: "Watching",      cls: "status-watching",  icon: Play,         dot: "bg-emerald-400" },
-  { value: "completed",     label: "Completed",     cls: "status-completed", icon: CheckCircle2, dot: "bg-violet-400" },
-  { value: "dropped",       label: "Dropped",       cls: "status-dropped",   icon: XCircle,      dot: "bg-zinc-500" },
-];
+const STATUS_CONFIG: Record<Status, { label: string; badge: string; stripe: string; icon: React.ElementType }> = {
+  "plan-to-watch": { label: "Plan to Watch", badge: "badge-plan",      stripe: "stripe-plan",      icon: Clock },
+  watching:        { label: "Watching",       badge: "badge-watching",  stripe: "stripe-watching",  icon: Play },
+  completed:       { label: "Completed",      badge: "badge-completed", stripe: "stripe-completed", icon: CheckCircle2 },
+  dropped:         { label: "Dropped",        badge: "badge-dropped",   stripe: "stripe-dropped",   icon: XCircle },
+};
 
-const GENRES = [
-  "Romance","Action","Comedy","Thriller","Fantasy",
-  "Slice of Life","Horror","Mystery","Sci-Fi","Drama",
-  "Historical","Crime","Sports","School","Family",
-];
+const CYCLE: Record<Status, Status> = {
+  "plan-to-watch": "watching",
+  watching: "completed",
+  completed: "dropped",
+  dropped: "plan-to-watch",
+};
 
-const formSchema = z.object({
-  title:          z.string().min(1, "Title is required"),
+const GENRES = ["Romance","Action","Comedy","Thriller","Fantasy","Slice of Life","Horror","Mystery","Sci-Fi","Drama","Historical","Crime","Sports","School","Family"];
+
+const schema = z.object({
+  title:          z.string().min(1, "Title wajib diisi"),
   genre:          z.string().optional(),
   status:         z.enum(["plan-to-watch","watching","completed","dropped"]),
   rating:         z.coerce.number().min(1).max(10).optional().or(z.literal("")),
@@ -43,105 +43,97 @@ const formSchema = z.object({
   currentEpisode: z.coerce.number().min(0).optional().or(z.literal("")),
   notes:          z.string().optional(),
 });
-type FormValues = z.infer<typeof formSchema>;
+type FormVals = z.infer<typeof schema>;
 
-interface MediaItem {
+interface Item {
   id: number; title: string; category: string; genre?: string | null;
   status: string; rating?: number | null; notes?: string | null;
   totalEpisodes?: number | null; currentEpisode?: number | null; createdAt: string;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const opt = STATUS_OPTIONS.find(s => s.value === status) ?? STATUS_OPTIONS[0];
-  const Icon = opt.icon;
-  return (
-    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs", opt.cls)}>
-      <Icon className="w-2.5 h-2.5" />
-      {opt.label}
-    </span>
-  );
-}
-
-function MediaFormDialog({
-  open, onOpenChange, item, category, title, onSuccess,
-}: {
+/* ── Form dialog ── */
+function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
   open: boolean; onOpenChange: (v: boolean) => void;
-  item?: MediaItem | null; category: string; title: string; onSuccess: () => void;
+  item: Item | null; category: string; title: string; onSuccess: () => void;
 }) {
   const { toast } = useToast();
-  const createMedia = useCreateMedia();
-  const updateMedia = useUpdateMedia();
-  const isEditing = !!item;
+  const create = useCreateMedia();
+  const update = useUpdateMedia();
+  const isEdit = !!item;
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormVals>({
+    resolver: zodResolver(schema),
     defaultValues: {
-      title:          item?.title ?? "",
-      genre:          item?.genre ?? "",
-      status:         (item?.status as MediaStatus) ?? "plan-to-watch",
-      rating:         item?.rating ?? "",
-      totalEpisodes:  item?.totalEpisodes ?? "",
+      title:          item?.title          ?? "",
+      genre:          item?.genre          ?? "",
+      status:         (item?.status as Status) ?? "plan-to-watch",
+      rating:         item?.rating         ?? "",
+      totalEpisodes:  item?.totalEpisodes  ?? "",
       currentEpisode: item?.currentEpisode ?? "",
-      notes:          item?.notes ?? "",
+      notes:          item?.notes          ?? "",
     },
   });
 
-  async function onSubmit(values: FormValues) {
-    const payload = {
-      title: values.title, category,
-      genre:          values.genre          || undefined,
-      status:         values.status,
-      rating:         values.rating         === "" ? undefined : Number(values.rating),
-      totalEpisodes:  values.totalEpisodes  === "" ? undefined : Number(values.totalEpisodes),
-      currentEpisode: values.currentEpisode === "" ? undefined : Number(values.currentEpisode),
-      notes:          values.notes          || undefined,
+  async function onSubmit(v: FormVals) {
+    const data = {
+      title: v.title, category,
+      genre:          v.genre          || undefined,
+      status:         v.status,
+      rating:         v.rating         === "" ? undefined : Number(v.rating),
+      totalEpisodes:  v.totalEpisodes  === "" ? undefined : Number(v.totalEpisodes),
+      currentEpisode: v.currentEpisode === "" ? undefined : Number(v.currentEpisode),
+      notes:          v.notes          || undefined,
     };
     try {
-      if (isEditing) {
-        await updateMedia.mutateAsync({ id: item.id, data: payload });
-        toast({ title: "Updated" });
-      } else {
-        await createMedia.mutateAsync({ data: payload });
-        toast({ title: "Added to list" });
-      }
-      onSuccess();
-      onOpenChange(false);
-    } catch {
-      toast({ title: "Something went wrong", variant: "destructive" });
-    }
+      if (isEdit) { await update.mutateAsync({ id: item.id, data }); toast({ title: "Tersimpan" }); }
+      else        { await create.mutateAsync({ data });               toast({ title: "Ditambahkan!" }); }
+      onSuccess(); onOpenChange(false);
+    } catch { toast({ title: "Gagal menyimpan", variant: "destructive" }); }
   }
+
+  const inp = {
+    style: {
+      width: "100%", padding: "8px 12px", borderRadius: 8,
+      background: "hsl(228,18%,13%)", border: "1px solid hsl(228,18%,20%)",
+      color: "hsl(220,18%,88%)", fontSize: 14, outline: "none",
+      fontFamily: "'Inter',sans-serif",
+    } as React.CSSProperties,
+  };
+
+  const lbl = { style: { display: "block", fontSize: 12, fontWeight: 500, color: "hsl(220,12%,45%)", marginBottom: 6 } as React.CSSProperties };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[hsl(222,25%,8%)] border-white/8 max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)", borderRadius: 14, maxWidth: 440, maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader>
-          <DialogTitle className="font-display text-base">
-            {isEditing ? "Edit" : <><span className="neon-text">+</span> Add to</>} {title}
+          <DialogTitle style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 17, color: "hsl(220,18%,91%)" }}>
+            {isEdit ? "Edit" : <><span className="glow-text">+</span> Tambah ke</> } {title}
           </DialogTitle>
         </DialogHeader>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-1">
+          <form onSubmit={form.handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-muted-foreground">Title</FormLabel>
+                <FormLabel><span {...lbl}>Judul</span></FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Enter title..." className="bg-white/4 border-white/8 text-sm h-9 focus-visible:border-primary/50 focus-visible:ring-0" data-testid="input-title" />
+                  <input {...field} placeholder="Nama judul..." {...inp} data-testid="input-title" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <FormField control={form.control} name="genre" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-muted-foreground">Genre</FormLabel>
+                  <FormLabel><span {...lbl}>Genre</span></FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-white/4 border-white/8 text-sm h-9" data-testid="select-genre">
-                        <SelectValue placeholder="Genre" />
+                      <SelectTrigger className="bg-muted/60 border-white/8 text-sm h-9" data-testid="select-genre">
+                        <SelectValue placeholder="Pilih genre" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-[hsl(222,25%,8%)] border-white/8">
+                    <SelectContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)" }}>
                       {GENRES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -149,71 +141,60 @@ function MediaFormDialog({
               )} />
               <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-muted-foreground">Status</FormLabel>
+                  <FormLabel><span {...lbl}>Status</span></FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-white/4 border-white/8 text-sm h-9" data-testid="select-status">
+                      <SelectTrigger className="bg-muted/60 border-white/8 text-sm h-9" data-testid="select-status">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-[hsl(222,25%,8%)] border-white/8">
-                      {STATUS_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    <SelectContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)" }}>
+                      {(Object.keys(STATUS_CONFIG) as Status[]).map(s => (
+                        <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormItem>
               )} />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <FormField control={form.control} name="rating" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-muted-foreground">Rating</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" min={1} max={10} placeholder="1–10" className="bg-white/4 border-white/8 text-sm h-9" data-testid="input-rating" />
-                  </FormControl>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="totalEpisodes" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-muted-foreground">Total Eps</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" min={1} placeholder="—" className="bg-white/4 border-white/8 text-sm h-9" data-testid="input-total-episodes" />
-                  </FormControl>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="currentEpisode" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-muted-foreground">Current</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" min={0} placeholder="—" className="bg-white/4 border-white/8 text-sm h-9" data-testid="input-current-episode" />
-                  </FormControl>
-                </FormItem>
-              )} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              {([["rating","Rating (1-10)","1–10"],["totalEpisodes","Total Eps","—"],["currentEpisode","Current Ep","—"]] as const).map(([name, label2, ph]) => (
+                <FormField key={name} control={form.control} name={name} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel><span {...lbl}>{label2}</span></FormLabel>
+                    <FormControl>
+                      <input {...field} type="number" min={name === "currentEpisode" ? 0 : 1} max={name === "rating" ? 10 : undefined} placeholder={ph} {...inp} data-testid={`input-${name}`} />
+                    </FormControl>
+                  </FormItem>
+                )} />
+              ))}
             </div>
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-muted-foreground">Notes</FormLabel>
+                <FormLabel><span {...lbl}>Catatan</span></FormLabel>
                 <FormControl>
-                  <Textarea {...field} placeholder="Optional notes..." className="bg-white/4 border-white/8 resize-none text-sm" rows={2} data-testid="input-notes" />
+                  <textarea
+                    {...field}
+                    rows={2}
+                    placeholder="Catatan pribadi..."
+                    data-testid="input-notes"
+                    style={{ ...inp.style, resize: "none" }}
+                  />
                 </FormControl>
               </FormItem>
             )} />
 
-            <DialogFooter className="gap-2 pt-1">
-              <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="text-muted-foreground" data-testid="button-cancel">
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={createMedia.isPending || updateMedia.isPending}
-                className="btn-neon font-medium"
-                data-testid="button-submit"
-              >
-                {isEditing ? "Save" : "Add"}
-              </Button>
-            </DialogFooter>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 4 }}>
+              <button type="button" onClick={() => onOpenChange(false)} data-testid="button-cancel"
+                style={{ padding: "7px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: "transparent", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
+                Batal
+              </button>
+              <button type="submit" disabled={create.isPending || update.isPending} className="btn-primary" data-testid="button-submit">
+                {isEdit ? "Simpan" : "Tambah"}
+              </button>
+            </div>
           </form>
         </Form>
       </DialogContent>
@@ -221,331 +202,344 @@ function MediaFormDialog({
   );
 }
 
-function MediaCard({
-  item, onEdit, onDelete, onStatusChange,
-}: {
-  item: MediaItem;
-  onEdit: (item: MediaItem) => void;
-  onDelete: (item: MediaItem) => void;
-  onStatusChange: (item: MediaItem, status: MediaStatus) => void;
+/* ── Media row card ── */
+function ItemCard({ item, onEdit, onDelete, onStatus }: {
+  item: Item;
+  onEdit: () => void;
+  onDelete: () => void;
+  onStatus: (s: Status) => void;
 }) {
-  const nextStatus: Record<string, MediaStatus> = {
-    "plan-to-watch": "watching",
-    watching: "completed",
-    completed: "dropped",
-    dropped: "plan-to-watch",
-  };
-
+  const st = (item.status as Status) in STATUS_CONFIG ? item.status as Status : "plan-to-watch";
+  const cfg = STATUS_CONFIG[st];
+  const Icon = cfg.icon;
   const pct = item.totalEpisodes && item.currentEpisode != null
     ? Math.round((item.currentEpisode / item.totalEpisodes) * 100) : null;
 
-  const barColor: Record<string, string> = {
-    watching:    "bg-gradient-to-r from-emerald-600 to-emerald-400",
-    completed:   "bg-gradient-to-r from-violet-600 to-violet-400",
-    "plan-to-watch": "bg-gradient-to-r from-sky-700 to-sky-500",
-    dropped:     "bg-zinc-700",
-  };
-
-  const toggleRing: Record<string, string> = {
-    "plan-to-watch": "border-sky-800 hover:border-sky-500",
-    watching:        "border-emerald-700 bg-emerald-950/40",
-    completed:       "border-violet-600 bg-violet-950/50",
-    dropped:         "border-zinc-700 bg-zinc-900/40",
-  };
-
   return (
     <div
-      className="glass-card px-4 py-3.5 flex items-start gap-3 group"
+      className={cn("surface-sm", cfg.stripe)}
+      style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}
       data-testid={`card-media-${item.id}`}
     >
-      {/* Status circle */}
+      {/* Status toggle button */}
       <button
-        onClick={() => onStatusChange(item, nextStatus[item.status] ?? "plan-to-watch")}
-        className={cn(
-          "mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200",
-          toggleRing[item.status]
-        )}
-        title="Click to cycle status"
+        onClick={() => onStatus(CYCLE[st])}
+        title="Klik untuk ganti status"
         data-testid={`button-status-toggle-${item.id}`}
+        style={{
+          flexShrink: 0, marginTop: 2,
+          width: 22, height: 22, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", border: "none",
+          background: st === "completed" ? "hsla(252,70%,60%,0.2)"
+                     : st === "watching"  ? "hsla(155,60%,45%,0.15)"
+                     : st === "dropped"   ? "hsla(220,10%,40%,0.15)"
+                     :                     "hsla(214,80%,55%,0.1)",
+          transition: "opacity 150ms",
+        }}
       >
-        {item.status === "completed"    && <CheckCircle2 className="w-3 h-3 text-violet-400" style={{ filter: "drop-shadow(0 0 4px hsl(262,65%,62%))" }} />}
-        {item.status === "watching"     && <Play className="w-2.5 h-2.5 text-emerald-400" />}
-        {item.status === "dropped"      && <XCircle className="w-3 h-3 text-zinc-600" />}
+        <Icon
+          className="w-3 h-3"
+          style={{
+            color: st === "completed" ? "hsl(252,70%,72%)"
+                 : st === "watching"  ? "hsl(155,60%,60%)"
+                 : st === "dropped"   ? "hsl(220,10%,48%)"
+                 :                     "hsl(214,80%,65%)",
+          }}
+        />
       </button>
 
-      <div className="flex-1 min-w-0 space-y-1.5">
-        {/* Title + actions */}
-        <div className="flex items-start justify-between gap-2">
-          <p className={cn(
-            "text-sm font-medium leading-snug",
-            item.status === "dropped"   && "line-through text-muted-foreground/60",
-            item.status === "completed" && "text-violet-300",
-          )}>
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Title row */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+          <p style={{
+            fontSize: 14, fontWeight: 600,
+            fontFamily: "'Sora',sans-serif",
+            color: st === "dropped"   ? "hsl(220,12%,38%)"
+                 : st === "completed" ? "hsl(252,70%,78%)"
+                 :                     "hsl(220,18%,90%)",
+            textDecoration: st === "dropped" ? "line-through" : "none",
+            lineHeight: 1.3,
+          }}>
             {item.title}
           </p>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <button onClick={() => onEdit(item)} className="p-1 rounded hover:bg-white/6 text-muted-foreground hover:text-foreground transition-colors" data-testid={`button-edit-${item.id}`}>
+
+          {/* Action buttons — ALWAYS VISIBLE */}
+          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+            <button
+              onClick={onEdit}
+              data-testid={`button-edit-${item.id}`}
+              title="Edit"
+              style={{
+                width: 28, height: 28, borderRadius: 7,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "hsla(255,100%,100%,0.04)",
+                border: "1px solid hsl(228,18%,18%)",
+                color: "hsl(220,12%,48%)", cursor: "pointer",
+                transition: "all 150ms",
+              }}
+              onMouseEnter={e => { const el = e.currentTarget; el.style.color = "hsl(220,18%,85%)"; el.style.borderColor = "hsl(228,18%,28%)"; el.style.background = "hsla(255,100%,100%,0.08)"; }}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.color = "hsl(220,12%,48%)"; el.style.borderColor = "hsl(228,18%,18%)"; el.style.background = "hsla(255,100%,100%,0.04)"; }}
+            >
               <Pencil className="w-3 h-3" />
             </button>
-            <button onClick={() => onDelete(item)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors" data-testid={`button-delete-${item.id}`}>
+            <button
+              onClick={onDelete}
+              data-testid={`button-delete-${item.id}`}
+              title="Hapus"
+              style={{
+                width: 28, height: 28, borderRadius: 7,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "hsla(0,65%,55%,0.06)",
+                border: "1px solid hsla(0,65%,55%,0.2)",
+                color: "hsl(0,60%,55%)", cursor: "pointer",
+                transition: "all 150ms",
+              }}
+              onMouseEnter={e => { const el = e.currentTarget; el.style.background = "hsla(0,65%,55%,0.14)"; el.style.borderColor = "hsla(0,65%,55%,0.5)"; }}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.background = "hsla(0,65%,55%,0.06)"; el.style.borderColor = "hsla(0,65%,55%,0.2)"; }}
+            >
               <Trash2 className="w-3 h-3" />
             </button>
           </div>
         </div>
 
-        {/* Meta row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <StatusBadge status={item.status} />
+        {/* Badges row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: pct !== null ? 8 : 0 }}>
+          <span
+            className={cfg.badge}
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 500 }}
+          >
+            <Icon className="w-2.5 h-2.5" />
+            {cfg.label}
+          </span>
+
           {item.genre && (
-            <span className="text-xs text-muted-foreground/70">{item.genre}</span>
+            <span style={{ fontSize: 12, color: "hsl(220,12%,42%)", background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,18%)", padding: "2px 8px", borderRadius: 20 }}>
+              {item.genre}
+            </span>
           )}
+
           {item.rating && (
-            <span className="flex items-center gap-0.5 text-xs text-amber-400/80">
-              <Star className="w-2.5 h-2.5 fill-amber-400/50" />{item.rating}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, color: "hsl(40,85%,62%)", fontWeight: 600 }}>
+              <Star className="w-3 h-3" style={{ fill: "hsl(40,85%,62%)" }} />
+              {item.rating}
+            </span>
+          )}
+
+          {item.currentEpisode != null && item.totalEpisodes && (
+            <span style={{ fontSize: 12, color: "hsl(220,12%,42%)", marginLeft: "auto" }}>
+              Ep {item.currentEpisode}/{item.totalEpisodes}
             </span>
           )}
         </div>
 
-        {/* Episode progress */}
+        {/* Progress bar */}
         {pct !== null && (
-          <div className="space-y-1">
-            <div className="flex justify-between text-[11px] text-muted-foreground/60">
-              <span>Ep {item.currentEpisode} / {item.totalEpisodes}</span>
-              <span>{pct}%</span>
-            </div>
-            <div className="h-0.5 rounded-full bg-white/5 overflow-hidden">
-              <div className={cn("h-full rounded-full opacity-70", barColor[item.status] ?? "bg-primary")} style={{ width: `${pct}%` }} />
-            </div>
+          <div style={{ height: 2, borderRadius: 99, background: "hsla(255,100%,100%,0.06)", overflow: "hidden" }}>
+            <div style={{
+              height: "100%", borderRadius: 99,
+              background: st === "completed" ? "hsl(252,70%,60%)"
+                         : st === "watching" ? "hsl(155,60%,45%)"
+                         :                    "hsl(214,80%,55%)",
+              opacity: 0.7, width: `${pct}%`,
+              transition: "width 400ms ease",
+            }} />
           </div>
         )}
 
         {/* Notes */}
         {item.notes && (
-          <p className="text-[11px] text-muted-foreground/50 truncate italic">{item.notes}</p>
+          <p style={{ fontSize: 12, color: "hsl(220,12%,38%)", marginTop: 6, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {item.notes}
+          </p>
         )}
       </div>
     </div>
   );
 }
 
+/* ── Main page ── */
 export function CategoryList({ category, title }: { category: string; title: string }) {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { toast } = useToast();
 
-  const [search, setSearch]               = useState("");
-  const [selectedGenre, setSelectedGenre] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [dialogOpen, setDialogOpen]       = useState(false);
-  const [editItem, setEditItem]           = useState<MediaItem | null>(null);
-  const [deleteItem, setDeleteItem]       = useState<MediaItem | null>(null);
+  const [search,   setSearch]   = useState("");
+  const [genre,    setGenre]    = useState("all");
+  const [status,   setStatus]   = useState("all");
+  const [dlgOpen,  setDlgOpen]  = useState(false);
+  const [editItem, setEditItem] = useState<Item | null>(null);
+  const [delItem,  setDelItem]  = useState<Item | null>(null);
 
   const { data: items = [], isLoading } = useListMedia(
     { category },
     { query: { queryKey: getListMediaQueryKey({ category }) } }
   );
-  const { data: allGenres = [] } = useListGenres({
-    query: { queryKey: getListGenresQueryKey() },
-  });
-  const deleteMedia = useDeleteMedia();
-  const updateMedia = useUpdateMedia();
+  const { data: allGenres = [] } = useListGenres({ query: { queryKey: getListGenresQueryKey() } });
+  const delMedia = useDeleteMedia();
+  const updMedia = useUpdateMedia();
 
-  const filtered = items.filter(item => {
-    const matchSearch  = !search || item.title.toLowerCase().includes(search.toLowerCase());
-    const matchGenre   = selectedGenre  === "all" || item.genre   === selectedGenre;
-    const matchStatus  = selectedStatus === "all" || item.status  === selectedStatus;
-    return matchSearch && matchGenre && matchStatus;
+  const shown = items.filter(i => {
+    const ms = !search || i.title.toLowerCase().includes(search.toLowerCase());
+    const mg = genre  === "all" || i.genre  === genre;
+    const ms2= status === "all" || i.status === status;
+    return ms && mg && ms2;
   });
 
-  const counts = {
-    total:       items.length,
-    completed:   items.filter(i => i.status === "completed").length,
-    watching:    items.filter(i => i.status === "watching").length,
-    planToWatch: items.filter(i => i.status === "plan-to-watch").length,
-    dropped:     items.filter(i => i.status === "dropped").length,
+  const cnt = {
+    total:   items.length,
+    done:    items.filter(i => i.status === "completed").length,
+    watch:   items.filter(i => i.status === "watching").length,
+    plan:    items.filter(i => i.status === "plan-to-watch").length,
+    dropped: items.filter(i => i.status === "dropped").length,
   };
 
-  const categoryGenres = allGenres.filter(g => items.some(i => i.genre === g));
+  const myGenres = allGenres.filter(g => items.some(i => i.genre === g));
 
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: getListMediaQueryKey({ category }) });
-    queryClient.invalidateQueries({ queryKey: getGetMediaStatsQueryKey() });
+  function inv() {
+    qc.invalidateQueries({ queryKey: getListMediaQueryKey({ category }) });
+    qc.invalidateQueries({ queryKey: getGetMediaStatsQueryKey() });
   }
 
-  async function handleStatusChange(item: MediaItem, status: MediaStatus) {
-    try {
-      await updateMedia.mutateAsync({ id: item.id, data: { status } });
-      invalidate();
-    } catch {
-      toast({ title: "Failed to update", variant: "destructive" });
-    }
+  async function handleStatus(item: Item, s: Status) {
+    try { await updMedia.mutateAsync({ id: item.id, data: { status: s } }); inv(); }
+    catch { toast({ title: "Gagal update status", variant: "destructive" }); }
   }
 
   async function handleDelete() {
-    if (!deleteItem) return;
+    if (!delItem) return;
     try {
-      await deleteMedia.mutateAsync({ id: deleteItem.id });
-      invalidate();
-      queryClient.invalidateQueries({ queryKey: getListGenresQueryKey() });
-      toast({ title: "Removed" });
-    } catch {
-      toast({ title: "Failed to delete", variant: "destructive" });
-    } finally {
-      setDeleteItem(null);
-    }
+      await delMedia.mutateAsync({ id: delItem.id });
+      inv();
+      qc.invalidateQueries({ queryKey: getListGenresQueryKey() });
+      toast({ title: `"${delItem.title}" dihapus` });
+    } catch { toast({ title: "Gagal hapus", variant: "destructive" }); }
+    finally { setDelItem(null); }
   }
 
-  function handleFormSuccess() {
-    invalidate();
-    queryClient.invalidateQueries({ queryKey: getListGenresQueryKey() });
-  }
+  function openAdd()      { setEditItem(null); setDlgOpen(true); }
+  function openEdit(i: Item) { setEditItem(i);  setDlgOpen(true); }
+  function onFormDone()   { inv(); qc.invalidateQueries({ queryKey: getListGenresQueryKey() }); }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 pb-20 md:pb-0">
-      {/* Header */}
-      <div className="flex items-start justify-between pt-1">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }} className="pb-20 md:pb-0 animate-in fade-in duration-300">
+
+      {/* ── Header ── */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, paddingTop: 4 }}>
         <div>
-          <h1 className="text-2xl font-display font-bold text-foreground mb-1">
-            {title}<span className="neon-text">.</span>
+          <h1 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.5px", color: "hsl(220,18%,91%)", marginBottom: 4, lineHeight: 1.1 }}>
+            {title}<span className="glow-text">.</span>
           </h1>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-            <span>{counts.total} total</span>
-            {counts.watching   > 0 && <><span>·</span><span className="text-emerald-400">{counts.watching} watching</span></>}
-            {counts.completed  > 0 && <><span>·</span><span className="text-violet-400">{counts.completed} done</span></>}
-            {counts.planToWatch > 0 && <><span>·</span><span className="text-sky-400">{counts.planToWatch} planned</span></>}
-            {counts.dropped    > 0 && <><span>·</span><span className="text-zinc-500">{counts.dropped} dropped</span></>}
+          <div style={{ display: "flex", gap: 8, fontSize: 12, color: "hsl(220,12%,42%)", flexWrap: "wrap", alignItems: "center" }}>
+            <span>{cnt.total} total</span>
+            {cnt.watch   > 0 && <><span>·</span><span style={{ color: "hsl(155,60%,58%)" }}>{cnt.watch} watching</span></>}
+            {cnt.done    > 0 && <><span>·</span><span style={{ color: "hsl(252,70%,72%)" }}>{cnt.done} selesai</span></>}
+            {cnt.plan    > 0 && <><span>·</span><span style={{ color: "hsl(214,80%,65%)" }}>{cnt.plan} planned</span></>}
+            {cnt.dropped > 0 && <><span>·</span><span style={{ color: "hsl(220,10%,45%)" }}>{cnt.dropped} dropped</span></>}
           </div>
         </div>
-
-        <button
-          onClick={() => { setEditItem(null); setDialogOpen(true); }}
-          className="btn-neon flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium"
-          data-testid="button-add"
-        >
+        <button onClick={openAdd} className="btn-primary" data-testid="button-add">
           <Plus className="w-3.5 h-3.5" />
-          Add
+          Tambah
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-        <Input
+      {/* ── Search ── */}
+      <div style={{ position: "relative" }}>
+        <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "hsl(220,12%,40%)" }} />
+        <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder={`Search ${title.toLowerCase()}...`}
-          className="pl-9 bg-white/4 border-white/8 text-sm h-9 focus-visible:border-primary/40 focus-visible:ring-0"
+          placeholder={`Cari ${title.toLowerCase()}...`}
           data-testid="input-search"
+          style={{
+            width: "100%", padding: "9px 12px 9px 36px",
+            borderRadius: 10, fontSize: 13,
+            background: "hsl(228,20%,10%)", border: "1px solid hsl(228,18%,16%)",
+            color: "hsl(220,18%,88%)", outline: "none", fontFamily: "'Inter',sans-serif",
+          }}
         />
       </div>
 
-      {/* Status pills */}
-      <div className="flex gap-1.5 flex-wrap">
-        {["all", ...STATUS_OPTIONS.map(s => s.value)].map(v => {
-          const opt = STATUS_OPTIONS.find(s => s.value === v);
-          const label = v === "all" ? "All" : (opt?.label ?? v);
-          const isActive = selectedStatus === v;
-          return (
-            <button
-              key={v}
-              onClick={() => setSelectedStatus(v)}
-              className={cn(
-                "px-3 py-1 rounded-md text-xs font-medium border transition-all duration-150",
-                isActive
-                  ? "pill-active"
-                  : "border-white/8 text-muted-foreground hover:text-foreground hover:border-white/15"
-              )}
-              data-testid={`filter-status-${v}`}
-            >
-              {label}
-            </button>
-          );
-        })}
+      {/* ── Status filter ── */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {([["all","Semua"], ["plan-to-watch","Mau Nonton"], ["watching","Lagi Nonton"], ["completed","Selesai"], ["dropped","Dropped"]] as const).map(([v, lbl]) => (
+          <button key={v} onClick={() => setStatus(v)} className={cn("pill", status === v && "pill-active")} data-testid={`filter-status-${v}`}>
+            {lbl}
+          </button>
+        ))}
       </div>
 
-      {/* Genre pills */}
-      {categoryGenres.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap">
-          {["all", ...categoryGenres].map(g => {
-            const isActive = selectedGenre === g;
-            return (
-              <button
-                key={g}
-                onClick={() => setSelectedGenre(g)}
-                className={cn(
-                  "px-3 py-1 rounded-md text-xs font-medium border transition-all duration-150",
-                  isActive
-                    ? "pill-active-genre"
-                    : "border-white/8 text-muted-foreground hover:text-foreground hover:border-white/15"
-                )}
-                data-testid={`filter-genre-${g}`}
-              >
-                {g === "all" ? "All genres" : g}
-              </button>
-            );
-          })}
+      {/* ── Genre filter ── */}
+      {myGenres.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {["all", ...myGenres].map(g => (
+            <button key={g} onClick={() => setGenre(g)} className={cn("pill", genre === g && "pill-genre-active")} data-testid={`filter-genre-${g}`}>
+              {g === "all" ? "Semua Genre" : g}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* List */}
+      {/* ── List ── */}
       {isLoading ? (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-16 rounded-lg bg-muted/50" />)}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="glass-card p-10 text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            {items.length === 0 ? `Nothing here yet — add your first ${title} entry!` : "No items match your filters."}
+      ) : shown.length === 0 ? (
+        <div className="surface" style={{ padding: "48px 24px", textAlign: "center" }}>
+          <p style={{ fontSize: 14, color: "hsl(220,12%,40%)", marginBottom: 16 }}>
+            {items.length === 0 ? `Belum ada ${title} di list kamu.` : "Tidak ada yang cocok dengan filter."}
           </p>
           {items.length === 0 && (
-            <button
-              onClick={() => { setEditItem(null); setDialogOpen(true); }}
-              className="btn-neon inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium"
-              data-testid="button-add-empty"
-            >
+            <button onClick={openAdd} className="btn-outline" data-testid="button-add-empty">
               <Plus className="w-3.5 h-3.5" />
-              Add first entry
+              Tambah yang pertama
             </button>
           )}
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map(item => (
-            <MediaCard
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {shown.map(item => (
+            <ItemCard
               key={item.id}
-              item={item as MediaItem}
-              onEdit={item => { setEditItem(item); setDialogOpen(true); }}
-              onDelete={setDeleteItem}
-              onStatusChange={handleStatusChange}
+              item={item as Item}
+              onEdit={() => openEdit(item as Item)}
+              onDelete={() => setDelItem(item as Item)}
+              onStatus={s => handleStatus(item as Item, s)}
             />
           ))}
         </div>
       )}
 
-      <MediaFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        item={editItem}
-        category={category}
-        title={title}
-        onSuccess={handleFormSuccess}
+      {/* ── Dialogs ── */}
+      <ItemDialog
+        open={dlgOpen} onOpenChange={setDlgOpen}
+        item={editItem} category={category} title={title}
+        onSuccess={onFormDone}
       />
 
-      <AlertDialog open={!!deleteItem} onOpenChange={v => !v && setDeleteItem(null)}>
-        <AlertDialogContent className="bg-[hsl(222,25%,8%)] border-white/8">
+      <AlertDialog open={!!delItem} onOpenChange={v => !v && setDelItem(null)}>
+        <AlertDialogContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)", borderRadius: 14 }}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove from list?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground text-sm">
-              This will permanently remove <span className="text-foreground font-medium">"{deleteItem?.title}"</span>.
+            <AlertDialogTitle style={{ fontFamily: "'Sora',sans-serif", fontSize: 16 }}>Hapus dari list?</AlertDialogTitle>
+            <AlertDialogDescription style={{ color: "hsl(220,12%,45%)", fontSize: 14 }}>
+              <span style={{ color: "hsl(220,18%,85%)", fontWeight: 500 }}>"{delItem?.title}"</span> akan dihapus permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/8 text-sm" data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+          <AlertDialogFooter style={{ gap: 10 }}>
+            <AlertDialogCancel
+              style={{ background: "transparent", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", borderRadius: 8, fontSize: 13 }}
+              data-testid="button-cancel-delete"
+            >
+              Batal
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-sm"
+              style={{ background: "hsla(0,65%,55%,0.12)", border: "1px solid hsla(0,65%,55%,0.35)", color: "hsl(0,65%,65%)", borderRadius: 8, fontSize: 13 }}
               data-testid="button-confirm-delete"
             >
-              Remove
+              Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
