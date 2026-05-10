@@ -334,10 +334,22 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess, exis
 function ShareCardDialog({ item, open, onClose }: { item: Item; open: boolean; onClose: () => void }) {
   const st = (item.status as Status) in STATUS_CONFIG ? item.status as Status : "plan-to-watch";
   const cfg = STATUS_CONFIG[st];
+  const Icon = cfg.icon;
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
   const year = item.startDate ? item.startDate.slice(0, 4) : item.endDate ? item.endDate.slice(0, 4) : null;
+  const pct  = item.totalEpisodes && item.currentEpisode != null
+    ? Math.round((item.currentEpisode / item.totalEpisodes) * 100) : null;
+
+  /* status accent colors */
+  const accentMap: Record<Status, string> = {
+    "plan-to-watch": "hsl(214,80%,62%)",
+    watching:        "hsl(155,65%,50%)",
+    completed:       "hsl(252,70%,72%)",
+    dropped:         "hsl(220,12%,50%)",
+  };
+  const accent = accentMap[st];
 
   async function handleDownload() {
     if (!cardRef.current) return;
@@ -349,139 +361,161 @@ function ShareCardDialog({ item, open, onClose }: { item: Item; open: boolean; o
       link.download = `${item.title.replace(/\s+/g, "_")}_neonwatch.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
-    } catch {
-      /* silent */
-    } finally {
-      setDownloading(false);
-    }
+    } catch { /* silent */ }
+    finally { setDownloading(false); }
   }
-
-  /* info rows shown at the bottom of the poster card */
-  const rows: { label: string; value: string }[] = [
-    { label: "genre",   value: item.genre  || "—" },
-    { label: "status",  value: cfg.label },
-    ...(item.totalEpisodes != null
-      ? [{ label: "episode", value: `${item.currentEpisode ?? 0} / ${item.totalEpisodes}` }]
-      : []),
-    ...(item.rating != null
-      ? [{ label: "rating",  value: `${item.rating} / 10 ⭐` }]
-      : []),
-    ...(item.tags ? [{ label: "tag", value: item.tags }] : []),
-  ];
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)", borderRadius: 16, maxWidth: 360, padding: "20px 20px 16px" }}>
+      <DialogContent style={{
+        background: "hsl(228,22%,8%)",
+        border: "1px solid hsl(228,18%,16%)",
+        borderRadius: 18,
+        maxWidth: 340,
+        padding: "18px 18px 14px",
+      }}>
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 14, color: "hsl(220,18%,88%)" }}>
-            Share Poster
+          <DialogTitle style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 13, color: "hsl(220,18%,70%)", letterSpacing: "0.04em" }}>
+            SHARE CARD
           </DialogTitle>
         </DialogHeader>
 
-        {/* ── Poster card (screenshottable) ── */}
+        {/* ══ Card (captured by html2canvas) ══ */}
         <div ref={cardRef} style={{
-          background: "#e9e5de",
-          borderRadius: 10,
+          borderRadius: 14,
           overflow: "hidden",
-          fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+          position: "relative",
+          background: "hsl(228,28%,8%)",
+          border: `1px solid ${accent}44`,
+          fontFamily: "'Inter','Helvetica Neue',Arial,sans-serif",
         }}>
-          {/* ── Image frame ── */}
-          <div style={{ padding: "14px 14px 10px", background: "#e9e5de" }}>
-            <div style={{
-              width: "100%",
-              aspectRatio: "2/3",
-              overflow: "hidden",
-              borderRadius: 6,
-              background: "#c8c3bb",
-              position: "relative",
-              boxShadow: "0 4px 18px rgba(0,0,0,0.28)",
-            }}>
+          {/* Top accent line */}
+          <div style={{ height: 3, background: `linear-gradient(90deg, ${accent}, transparent)` }} />
+
+          {/* Main body — horizontal */}
+          <div style={{ display: "flex", gap: 0 }}>
+            {/* ── Poster strip ── */}
+            <div style={{ width: 90, flexShrink: 0, position: "relative", background: "hsl(228,22%,11%)" }}>
               {item.imageUrl ? (
                 <img
                   src={item.imageUrl}
                   alt={item.title}
                   crossOrigin="anonymous"
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 140 }}
                 />
               ) : (
                 <div style={{
-                  width: "100%", height: "100%",
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
-                  background: "linear-gradient(135deg, #d5d0c8, #c0bbb3)",
+                  width: "100%", height: "100%", minHeight: 140,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  background: `linear-gradient(160deg, hsl(228,25%,12%), hsl(252,30%,15%))`,
                 }}>
-                  <span style={{ fontSize: 42, fontWeight: 900, color: "rgba(80,70,60,0.18)", letterSpacing: 2 }}>
+                  <span style={{ fontSize: 24, fontWeight: 900, color: `${accent}30`, letterSpacing: 1 }}>
                     {item.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()}
                   </span>
-                  <span style={{ fontSize: 11, color: "rgba(80,70,60,0.35)", fontWeight: 500, letterSpacing: "0.08em" }}>NO POSTER</span>
                 </div>
               )}
+              {/* Gradient fade right */}
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(to right, transparent 60%, hsl(228,28%,8%) 100%)",
+              }} />
             </div>
-          </div>
 
-          {/* ── Info section ── */}
-          <div style={{ padding: "2px 16px 16px", background: "#e9e5de" }}>
-            {/* Title + year */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-              <span style={{
-                fontSize: 20, fontWeight: 900, letterSpacing: "-0.02em",
-                color: "#1a1814", lineHeight: 1.15, textTransform: "uppercase",
-                fontFamily: "'Sora', 'Inter', sans-serif",
+            {/* ── Info ── */}
+            <div style={{ flex: 1, padding: "14px 14px 12px 10px", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
+              {/* Status badge */}
+              <div style={{ marginBottom: 6 }}>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "3px 9px", borderRadius: 20,
+                  fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                  color: accent, background: `${accent}18`, border: `1px solid ${accent}33`,
+                }}>
+                  <Icon style={{ width: 9, height: 9 }} />{cfg.label}
+                </span>
+              </div>
+
+              {/* Title */}
+              <p style={{
+                fontSize: 15, fontWeight: 800, lineHeight: 1.25, marginBottom: 4,
+                color: "hsl(220,18%,92%)", fontFamily: "'Sora',sans-serif",
+                letterSpacing: "-0.02em",
+                overflow: "hidden", display: "-webkit-box",
+                WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
               }}>
                 {item.title}
-              </span>
-              {year && (
-                <span style={{ fontSize: 16, fontWeight: 400, color: "#8a8479", flexShrink: 0 }}>{year}</span>
-              )}
-            </div>
+              </p>
 
-            {/* Divider */}
-            <div style={{ height: 1, background: "#c8c3bb", marginBottom: 10 }} />
+              {/* Genre + year */}
+              <p style={{ fontSize: 10, color: "hsl(220,12%,45%)", marginBottom: 8, fontWeight: 500 }}>
+                {[item.genre, year].filter(Boolean).join("  ·  ")}
+              </p>
 
-            {/* Info rows */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              {rows.map(r => (
-                <div key={r.label} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: "#8a8479", letterSpacing: "0.06em", textTransform: "lowercase", minWidth: 52, paddingTop: 1 }}>
-                    {r.label}
+              {/* Rating stars */}
+              {item.rating != null && (
+                <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 6 }}>
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} style={{
+                      width: 14, height: 3, borderRadius: 2,
+                      background: i < item.rating! ? "hsl(40,85%,58%)" : "hsl(228,20%,18%)",
+                    }} />
+                  ))}
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "hsl(40,85%,62%)", marginLeft: 3 }}>
+                    {item.rating}/10
                   </span>
-                  <span style={{ fontSize: 11, color: "#2e2b26", fontWeight: 500, lineHeight: 1.5, flex: 1 }}>{r.value}</span>
                 </div>
-              ))}
-              {/* Notes — separate block */}
-              {item.notes && (
-                <>
-                  <div style={{ height: 1, background: "#d0cbc4", margin: "4px 0" }} />
-                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "#8a8479", letterSpacing: "0.06em", textTransform: "lowercase", minWidth: 52, paddingTop: 1 }}>catatan</span>
-                    <span style={{ fontSize: 11, color: "#2e2b26", fontWeight: 400, lineHeight: 1.5, fontStyle: "italic", flex: 1 }}>{item.notes}</span>
-                  </div>
-                </>
               )}
-            </div>
 
-            {/* Branding */}
-            <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", color: "#8a8479", textTransform: "uppercase" }}>NeonWatch</span>
+              {/* Episode progress bar */}
+              {pct != null && item.totalEpisodes != null && (
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ height: 3, borderRadius: 2, background: "hsl(228,20%,18%)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: accent, borderRadius: 2 }} />
+                  </div>
+                  <p style={{ fontSize: 9, color: "hsl(220,12%,38%)", marginTop: 3 }}>
+                    Ep {item.currentEpisode ?? 0} / {item.totalEpisodes}
+                  </p>
+                </div>
+              )}
+
+              {/* Notes excerpt */}
+              {item.notes && (
+                <p style={{
+                  fontSize: 9, color: "hsl(220,12%,40%)", fontStyle: "italic", lineHeight: 1.4,
+                  overflow: "hidden", display: "-webkit-box",
+                  WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                }}>
+                  "{item.notes}"
+                </p>
+              )}
+
+              {/* Branding */}
+              <div style={{ marginTop: "auto", paddingTop: 8, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+                <div style={{ width: 5, height: 5, borderRadius: "50%", background: accent, boxShadow: `0 0 6px ${accent}` }} />
+                <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: "0.18em", color: "hsl(220,12%,35%)", textTransform: "uppercase" }}>
+                  NeonWatch
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── Actions ── */}
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        {/* ── Action buttons ── */}
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button
             onClick={handleDownload}
             disabled={downloading}
             className="btn-primary"
-            style={{ flex: 1, justifyContent: "center", gap: 6, fontSize: 12 }}
+            style={{ flex: 1, justifyContent: "center", gap: 6, fontSize: 12, height: 34 }}
           >
             <Download className="w-3.5 h-3.5" />
-            {downloading ? "Memproses..." : "Download Poster"}
+            {downloading ? "Memproses..." : "Simpan Gambar"}
           </button>
           <button
             onClick={onClose}
-            style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "transparent", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}
+            style={{ width: 34, height: 34, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer" }}
           >
-            Tutup
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </DialogContent>
