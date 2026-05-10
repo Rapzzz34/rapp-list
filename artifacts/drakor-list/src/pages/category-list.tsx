@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUpload } from "@workspace/object-storage-web";
 import {
   useListMedia, useCreateMedia, useUpdateMedia, useDeleteMedia, useListGenres,
   getListMediaQueryKey, getListGenresQueryKey, getGetMediaStatsQueryKey,
@@ -68,15 +67,26 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
   const [isMovie, setIsMovie] = useState<boolean>(() => isEdit ? item.totalEpisodes == null : false);
 
   const [imgPreview, setImgPreview] = useState<string>(item?.imageUrl ?? "");
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadFile, isUploading } = useUpload({
-    onSuccess: (res) => {
-      const servingUrl = `/api/storage${res.objectPath}`;
+
+  async function uploadFile(file: File) {
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/storage/uploads", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("upload failed");
+      const { servingUrl } = await res.json() as { servingUrl: string };
       form.setValue("imageUrl", servingUrl);
       setImgPreview(servingUrl);
-    },
-    onError: () => toast({ title: "Gagal upload gambar", variant: "destructive" }),
-  });
+    } catch {
+      toast({ title: "Gagal upload gambar", variant: "destructive" });
+      setImgPreview(item?.imageUrl ?? "");
+    } finally {
+      setIsUploading(false);
+    }
+  }
 
   const form = useForm<FormVals>({
     resolver: zodResolver(schema),
