@@ -18,4 +18,8 @@ export interface MediaInput {
   currentEpisode?: number;
   imageUrl?: string;
   tags?: string;
+  /** ISO date YYYY-MM-DD */
+  startDate?: string;
+  /** ISO date YYYY-MM-DD */
+  endDate?: string;
 }

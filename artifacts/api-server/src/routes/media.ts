@@ -12,6 +12,10 @@ import { eq, and, ilike, sql, SQL } from "drizzle-orm";
 
 const mediaRouter = Router();
 
+function todayStr() {
+  return new Date().toISOString().split("T")[0];
+}
+
 function serializeItem(item: typeof mediaTable.$inferSelect) {
   return {
     ...item,
@@ -49,7 +53,14 @@ mediaRouter.post("/media", async (req, res) => {
     return res.status(400).json({ error: "Invalid body" });
   }
 
-  const [created] = await db.insert(mediaTable).values(parsed.data).returning();
+  const values = { ...parsed.data };
+  if (values.status === "watching" || values.status === "completed") {
+    if (!values.startDate) values.startDate = todayStr();
+  }
+  if (values.status === "completed") {
+    if (!values.endDate) values.endDate = todayStr();
+  }
+  const [created] = await db.insert(mediaTable).values(values).returning();
   return res.status(201).json(serializeItem(created));
 });
 
@@ -212,9 +223,23 @@ mediaRouter.patch("/media/:id", async (req, res) => {
   const bodyParsed = UpdateMediaBody.safeParse(req.body);
   if (!bodyParsed.success) return res.status(400).json({ error: "Invalid body" });
 
+  const updateData: typeof bodyParsed.data = { ...bodyParsed.data };
+
+  if (updateData.status) {
+    const [existing] = await db.select().from(mediaTable).where(eq(mediaTable.id, paramParsed.data.id));
+    if (existing) {
+      if ((updateData.status === "watching" || updateData.status === "completed") && !existing.startDate && !updateData.startDate) {
+        updateData.startDate = todayStr();
+      }
+      if (updateData.status === "completed" && !existing.endDate && !updateData.endDate) {
+        updateData.endDate = todayStr();
+      }
+    }
+  }
+
   const [updated] = await db
     .update(mediaTable)
-    .set(bodyParsed.data)
+    .set(updateData)
     .where(eq(mediaTable.id, paramParsed.data.id))
     .returning();
 

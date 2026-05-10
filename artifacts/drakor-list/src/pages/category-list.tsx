@@ -12,7 +12,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Search, Plus, Pencil, Trash2, CheckCircle2, Play, Clock, XCircle, Star, ChevronRight, Download, Upload, Share2, ArrowUpDown } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, CheckCircle2, Play, Clock, XCircle, Star, ChevronRight, Download, Upload, Share2, ArrowUpDown, Shuffle, LayoutList, LayoutGrid, X } from "lucide-react";
+import confetti from "canvas-confetti";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -61,12 +62,29 @@ interface Item {
   status: string; rating?: number | null; notes?: string | null;
   totalEpisodes?: number | null; currentEpisode?: number | null;
   imageUrl?: string | null; tags?: string | null; createdAt: string;
+  startDate?: string | null; endDate?: string | null;
+}
+
+function fireConfetti() {
+  confetti({
+    particleCount: 90,
+    spread: 70,
+    origin: { y: 0.65 },
+    colors: ["#7c3aed", "#8b5cf6", "#a78bfa", "#c4b5fd", "#00d4ff", "#fff"],
+  });
+}
+
+function fmtDate(d: string | null | undefined) {
+  if (!d) return null;
+  const [y, m, day] = d.split("-");
+  return `${day}/${m}/${y}`;
 }
 
 /* ── Form dialog ── */
-function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
+function ItemDialog({ open, onOpenChange, item, category, title, onSuccess, existingItems = [] }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   item: Item | null; category: string; title: string; onSuccess: () => void;
+  existingItems?: Item[];
 }) {
   const { toast } = useToast();
   const create = useCreateMedia();
@@ -122,9 +140,16 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
       imageUrl:       v.imageUrl || undefined,
       tags:           v.tags     || undefined,
     };
+    if (!isEdit) {
+      const dup = existingItems.find(i => i.title.toLowerCase() === v.title.toLowerCase());
+      if (dup) {
+        toast({ title: `"${v.title}" sudah ada di list!`, description: `Status: ${STATUS_CONFIG[dup.status as Status]?.label ?? dup.status}`, variant: "destructive" });
+        return;
+      }
+    }
     try {
       if (isEdit) { await update.mutateAsync({ id: item.id, data }); toast({ title: "Tersimpan" }); }
-      else        { await create.mutateAsync({ data });               toast({ title: "Ditambahkan!" }); }
+      else        { await create.mutateAsync({ data });               toast({ title: `🎉 "${v.title}" ditambahkan!` }); }
       onSuccess(); onOpenChange(false);
     } catch { toast({ title: "Gagal menyimpan", variant: "destructive" }); }
   }
@@ -429,13 +454,14 @@ function BulkImportDialog({ open, onClose, category, onDone }: {
 }
 
 /* ── Media row card ── */
-function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp, onShare }: {
+function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp, onShare, onTagClick }: {
   item: Item;
   onEdit: () => void;
   onDelete: () => void;
   onStatus: (s: Status) => void;
   onEpisodeUp: () => void;
   onShare: () => void;
+  onTagClick?: (tag: string) => void;
 }) {
   const st = (item.status as Status) in STATUS_CONFIG ? item.status as Status : "plan-to-watch";
   const cfg = STATUS_CONFIG[st];
@@ -600,9 +626,14 @@ function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp, onShare }: {
         {tagList.length > 0 && (
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
             {tagList.map(tag => (
-              <span key={tag} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 20, background: "hsla(252,70%,55%,0.08)", border: "1px solid hsla(252,70%,55%,0.2)", color: "hsl(252,70%,62%)", fontWeight: 500 }}>
+              <button
+                key={tag}
+                onClick={() => onTagClick?.(tag)}
+                style={{ fontSize: 10, padding: "1px 7px", borderRadius: 20, background: "hsla(252,70%,55%,0.08)", border: "1px solid hsla(252,70%,55%,0.2)", color: "hsl(252,70%,62%)", fontWeight: 500, cursor: onTagClick ? "pointer" : "default", fontFamily: "'Inter',sans-serif" }}
+                title={onTagClick ? `Filter tag #${tag}` : undefined}
+              >
                 #{tag}
-              </span>
+              </button>
             ))}
           </div>
         )}
@@ -612,6 +643,18 @@ function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp, onShare }: {
           <p style={{ fontSize: 12, color: "hsl(220,12%,38%)", marginTop: 6, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {item.notes}
           </p>
+        )}
+
+        {/* Dates */}
+        {(item.startDate || item.endDate) && (
+          <div style={{ display: "flex", gap: 10, marginTop: 5, flexWrap: "wrap" }}>
+            {item.startDate && (
+              <span style={{ fontSize: 10, color: "hsl(155,60%,45%)" }}>▶ {fmtDate(item.startDate)}</span>
+            )}
+            {item.endDate && (
+              <span style={{ fontSize: 10, color: "hsl(252,70%,60%)" }}>✓ {fmtDate(item.endDate)}</span>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -633,6 +676,9 @@ export function CategoryList({ category, title }: { category: string; title: str
   const [delItem,     setDelItem]     = useState<Item | null>(null);
   const [shareItem,   setShareItem]   = useState<Item | null>(null);
   const [bulkOpen,    setBulkOpen]    = useState(false);
+  const [viewMode,    setViewMode]    = useState<"list"|"grid">("list");
+  const [ratingMin,   setRatingMin]   = useState<number|null>(null);
+  const [tagFilter,   setTagFilter]   = useState<string|null>(null);
 
   const { data: items = [], isLoading } = useListMedia(
     { category },
@@ -663,10 +709,12 @@ export function CategoryList({ category, title }: { category: string; title: str
 
   const shown = sortItems(
     items.filter(i => {
-      const ms  = !search || i.title.toLowerCase().includes(search.toLowerCase());
+      const ms  = !search    || i.title.toLowerCase().includes(search.toLowerCase());
       const mg  = genre  === "all" || i.genre  === genre;
       const ms2 = status === "all" || i.status === status;
-      return ms && mg && ms2;
+      const mr  = !ratingMin || (i.rating != null && i.rating >= ratingMin);
+      const mt  = !tagFilter || (i.tags?.split(",").map(t => t.trim()).includes(tagFilter));
+      return ms && mg && ms2 && mr && mt;
     })
   );
 
@@ -685,7 +733,11 @@ export function CategoryList({ category, title }: { category: string; title: str
   }
 
   async function handleStatus(item: Item, s: Status) {
-    try { await updMedia.mutateAsync({ id: item.id, data: { status: s } }); inv(); }
+    try {
+      await updMedia.mutateAsync({ id: item.id, data: { status: s } });
+      inv();
+      if (s === "completed") { fireConfetti(); toast({ title: `🎉 Selesai nonton "${item.title}"!` }); }
+    }
     catch { toast({ title: "Gagal update status", variant: "destructive" }); }
   }
 
@@ -695,6 +747,7 @@ export function CategoryList({ category, title }: { category: string; title: str
       if (isMovie) {
         await updMedia.mutateAsync({ id: item.id, data: { status: "completed" } });
         inv();
+        fireConfetti();
         toast({ title: `🎉 Selesai nonton "${item.title}"!` });
       } else {
         const current = item.currentEpisode ?? 0;
@@ -702,10 +755,17 @@ export function CategoryList({ category, title }: { category: string; title: str
         const finished = next >= item.totalEpisodes!;
         await updMedia.mutateAsync({ id: item.id, data: { currentEpisode: finished ? item.totalEpisodes! : next, ...(finished ? { status: "completed" } : {}) } });
         inv();
-        if (finished) toast({ title: `🎉 Selesai! "${item.title}" tamat.` });
+        if (finished) { fireConfetti(); toast({ title: `🎉 Selesai! "${item.title}" tamat.` }); }
         else toast({ title: `Ep ${next}/${item.totalEpisodes} — ${item.title}`, duration: 2000 });
       }
     } catch { toast({ title: "Gagal update", variant: "destructive" }); }
+  }
+
+  function handleRandomPick() {
+    const pool = items.filter(i => i.status === "plan-to-watch");
+    if (pool.length === 0) { toast({ title: "Tidak ada judul di Mau Nonton!" }); return; }
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    toast({ title: `🎲 ${picked.title}`, description: "Tonton ini berikutnya!" });
   }
 
   async function handleDelete() {
@@ -758,7 +818,17 @@ export function CategoryList({ category, title }: { category: string; title: str
             {cnt.dropped > 0 && <><span>·</span><span style={{ color: "hsl(220,10%,45%)" }}>{cnt.dropped} dropped</span></>}
           </div>
         </div>
-        <div className="flex gap-2 items-center flex-shrink-0">
+        <div className="flex gap-2 items-center flex-shrink-0 flex-wrap">
+          {/* Random pick */}
+          <button onClick={handleRandomPick} title="Pilihkan judul secara acak dari Mau Nonton"
+            style={{ height: 32, width: 32, borderRadius: 8, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Shuffle className="w-3.5 h-3.5" />
+          </button>
+          {/* Grid / List toggle */}
+          <button onClick={() => setViewMode(v => v === "list" ? "grid" : "list")} title={viewMode === "list" ? "Tampilan grid" : "Tampilan list"}
+            style={{ height: 32, width: 32, borderRadius: 8, background: viewMode === "grid" ? "hsla(252,70%,65%,0.15)" : "hsla(255,100%,100%,0.04)", border: viewMode === "grid" ? "1px solid hsla(252,70%,65%,0.4)" : "1px solid hsl(228,18%,20%)", color: viewMode === "grid" ? "hsl(252,70%,72%)" : "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {viewMode === "list" ? <LayoutGrid className="w-3.5 h-3.5" /> : <LayoutList className="w-3.5 h-3.5" />}
+          </button>
           <button onClick={() => setBulkOpen(true)} title="Import massal"
             style={{ height: 32, padding: "0 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap" }}>
             <Upload className="w-3 h-3" />Import
@@ -830,6 +900,35 @@ export function CategoryList({ category, title }: { category: string; title: str
         </div>
       )}
 
+      {/* ── Rating filter ── */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span style={{ fontSize: 11, color: "hsl(220,12%,38%)", fontWeight: 500 }}>Rating:</span>
+        {([null, 7, 8, 9] as const).map(r => (
+          <button
+            key={r ?? "all"}
+            onClick={() => setRatingMin(r)}
+            style={{
+              height: 24, padding: "0 10px", borderRadius: 20, fontSize: 11, fontWeight: 500,
+              background: ratingMin === r ? "hsla(40,85%,55%,0.15)" : "transparent",
+              border: ratingMin === r ? "1px solid hsla(40,85%,55%,0.5)" : "1px solid hsl(228,18%,18%)",
+              color: ratingMin === r ? "hsl(40,85%,68%)" : "hsl(220,12%,42%)",
+              cursor: "pointer", fontFamily: "'Inter',sans-serif",
+            }}
+          >
+            {r === null ? "Semua" : `≥${r} ⭐`}
+          </button>
+        ))}
+        {/* Active tag filter chip */}
+        {tagFilter && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px 2px 10px", borderRadius: 20, background: "hsla(252,70%,55%,0.12)", border: "1px solid hsla(252,70%,55%,0.35)", color: "hsl(252,70%,72%)", fontSize: 11, fontWeight: 500, marginLeft: 4 }}>
+            #{tagFilter}
+            <button onClick={() => setTagFilter(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "hsl(252,70%,60%)", display: "flex", padding: 0 }}>
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* ── List ── */}
       {isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -846,6 +945,56 @@ export function CategoryList({ category, title }: { category: string; title: str
             </button>
           )}
         </div>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" onClick={() => sortOpen && setSortOpen(false)}>
+          {shown.map(item => {
+            const it = item as Item;
+            const st = (it.status as Status) in STATUS_CONFIG ? it.status as Status : "plan-to-watch";
+            const cfg = STATUS_CONFIG[st];
+            const Icon = cfg.icon;
+            return (
+              <div key={it.id} className={cn("surface-sm", cfg.stripe)} style={{ display: "flex", flexDirection: "column", overflow: "hidden", padding: 0 }}>
+                {/* Poster */}
+                <div style={{ position: "relative", aspectRatio: "2/3", background: "hsl(228,20%,12%)" }}>
+                  {it.imageUrl ? (
+                    <img src={it.imageUrl} alt={it.title} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: st === "dropped" ? 0.4 : 1 }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon style={{ width: 28, height: 28, color: "hsl(220,12%,25%)" }} />
+                    </div>
+                  )}
+                  {/* Status badge overlay */}
+                  <span className={cfg.badge} style={{ position: "absolute", top: 6, left: 6, display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, fontSize: 10, fontWeight: 500 }}>
+                    <Icon className="w-2.5 h-2.5" />{cfg.label}
+                  </span>
+                  {/* Action buttons */}
+                  <div style={{ position: "absolute", top: 6, right: 6, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <button onClick={() => openEdit(it)} style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", background: "hsla(228,22%,7%,0.85)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,55%)", cursor: "pointer" }}>
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => setDelItem(it)} style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", background: "hsla(0,65%,55%,0.15)", border: "1px solid hsla(0,65%,55%,0.3)", color: "hsl(0,60%,60%)", cursor: "pointer" }}>
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                  {/* Rating */}
+                  {it.rating && (
+                    <span style={{ position: "absolute", bottom: 6, right: 6, display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: "hsl(40,85%,62%)", background: "hsla(228,22%,7%,0.85)", padding: "2px 6px", borderRadius: 6 }}>
+                      <Star className="w-3 h-3" style={{ fill: "hsl(40,85%,62%)" }} />{it.rating}
+                    </span>
+                  )}
+                </div>
+                {/* Title & meta */}
+                <div style={{ padding: "8px 10px 10px" }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, fontFamily: "'Sora',sans-serif", color: st === "dropped" ? "hsl(220,12%,38%)" : "hsl(220,18%,88%)", textDecoration: st === "dropped" ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>
+                    {it.title}
+                  </p>
+                  {it.genre && <p style={{ fontSize: 10, color: "hsl(220,12%,38%)" }}>{it.genre}</p>}
+                  {it.totalEpisodes && <p style={{ fontSize: 10, color: "hsl(220,12%,35%)", marginTop: 1 }}>Ep {it.currentEpisode ?? 0}/{it.totalEpisodes}</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }} onClick={() => sortOpen && setSortOpen(false)}>
           {shown.map(item => (
@@ -857,6 +1006,7 @@ export function CategoryList({ category, title }: { category: string; title: str
               onStatus={s => handleStatus(item as Item, s)}
               onEpisodeUp={() => handleEpisodeUp(item as Item)}
               onShare={() => setShareItem(item as Item)}
+              onTagClick={tag => setTagFilter(tag)}
             />
           ))}
         </div>
@@ -868,6 +1018,7 @@ export function CategoryList({ category, title }: { category: string; title: str
         open={dlgOpen} onOpenChange={setDlgOpen}
         item={editItem} category={category} title={title}
         onSuccess={onFormDone}
+        existingItems={items as Item[]}
       />
 
       {shareItem && (

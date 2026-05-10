@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import { Dashboard } from "@/pages/dashboard";
 import { CategoryList } from "@/pages/category-list";
 import { StatsPage } from "@/pages/stats";
+import { SearchPage } from "@/pages/search";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ function AppRouter() {
           {() => <CategoryList category="indo" title="Indonesian" />}
         </Route>
         <Route path="/stats" component={StatsPage} />
+        <Route path="/search" component={SearchPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

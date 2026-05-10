@@ -36,6 +36,16 @@ export interface MediaItem {
    * @nullable
    */
   tags?: string | null;
+  /**
+   * ISO date YYYY-MM-DD, auto-set when status → watching
+   * @nullable
+   */
+  startDate?: string | null;
+  /**
+   * ISO date YYYY-MM-DD, auto-set when status → completed
+   * @nullable
+   */
+  endDate?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;

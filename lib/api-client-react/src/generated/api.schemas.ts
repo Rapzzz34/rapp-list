@@ -39,6 +39,16 @@ export interface MediaItem {
    * @nullable
    */
   tags?: string | null;
+  /**
+   * ISO date YYYY-MM-DD, auto-set when status → watching
+   * @nullable
+   */
+  startDate?: string | null;
+  /**
+   * ISO date YYYY-MM-DD, auto-set when status → completed
+   * @nullable
+   */
+  endDate?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
@@ -56,6 +66,10 @@ export interface MediaInput {
   currentEpisode?: number;
   imageUrl?: string;
   tags?: string;
+  /** ISO date YYYY-MM-DD */
+  startDate?: string;
+  /** ISO date YYYY-MM-DD */
+  endDate?: string;
 }
 
 export interface MediaUpdate {
@@ -70,6 +84,8 @@ export interface MediaUpdate {
   currentEpisode?: number;
   imageUrl?: string;
   tags?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface BulkImportRequest {

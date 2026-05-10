@@ -310,6 +310,12 @@ components:
         tags:
           type: ["string", "null"]
           description: Comma-separated custom tags
+        startDate:
+          type: ["string", "null"]
+          description: ISO date YYYY-MM-DD, auto-set when status → watching
+        endDate:
+          type: ["string", "null"]
+          description: ISO date YYYY-MM-DD, auto-set when status → completed
         createdAt:
           type: string
         updatedAt:
@@ -340,6 +346,12 @@ components:
           type: string
         tags:
           type: string
+        startDate:
+          type: string
+          description: ISO date YYYY-MM-DD
+        endDate:
+          type: string
+          description: ISO date YYYY-MM-DD
 
     MediaUpdate:
       type: object
@@ -364,6 +376,10 @@ components:
         imageUrl:
           type: string
         tags:
+          type: string
+        startDate:
+          type: string
+        endDate:
           type: string
 
     BulkImportRequest:

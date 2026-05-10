@@ -39,6 +39,14 @@ export const ListMediaResponseItem = zod.object({
   currentEpisode: zod.number().nullish(),
   imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
   tags: zod.string().nullish().describe("Comma-separated custom tags"),
+  startDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → watching"),
+  endDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → completed"),
   createdAt: zod.string(),
   updatedAt: zod.string().nullish(),
 });
@@ -59,6 +67,8 @@ export const CreateMediaBody = zod.object({
   currentEpisode: zod.number().optional(),
   imageUrl: zod.string().optional(),
   tags: zod.string().optional(),
+  startDate: zod.string().optional().describe("ISO date YYYY-MM-DD"),
+  endDate: zod.string().optional().describe("ISO date YYYY-MM-DD"),
 });
 
 /**
@@ -82,6 +92,14 @@ export const GetMediaResponse = zod.object({
   currentEpisode: zod.number().nullish(),
   imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
   tags: zod.string().nullish().describe("Comma-separated custom tags"),
+  startDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → watching"),
+  endDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → completed"),
   createdAt: zod.string(),
   updatedAt: zod.string().nullish(),
 });
@@ -104,6 +122,8 @@ export const UpdateMediaBody = zod.object({
   currentEpisode: zod.number().optional(),
   imageUrl: zod.string().optional(),
   tags: zod.string().optional(),
+  startDate: zod.string().optional(),
+  endDate: zod.string().optional(),
 });
 
 export const UpdateMediaResponse = zod.object({
@@ -120,6 +140,14 @@ export const UpdateMediaResponse = zod.object({
   currentEpisode: zod.number().nullish(),
   imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
   tags: zod.string().nullish().describe("Comma-separated custom tags"),
+  startDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → watching"),
+  endDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → completed"),
   createdAt: zod.string(),
   updatedAt: zod.string().nullish(),
 });
@@ -187,6 +215,14 @@ export const ExportMediaResponseItem = zod.object({
   currentEpisode: zod.number().nullish(),
   imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
   tags: zod.string().nullish().describe("Comma-separated custom tags"),
+  startDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → watching"),
+  endDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date YYYY-MM-DD, auto-set when status → completed"),
   createdAt: zod.string(),
   updatedAt: zod.string().nullish(),
 });
@@ -209,6 +245,8 @@ export const BulkImportMediaBody = zod.object({
       currentEpisode: zod.number().optional(),
       imageUrl: zod.string().optional(),
       tags: zod.string().optional(),
+      startDate: zod.string().optional().describe("ISO date YYYY-MM-DD"),
+      endDate: zod.string().optional().describe("ISO date YYYY-MM-DD"),
     }),
   ),
 });

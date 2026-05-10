@@ -18,4 +18,6 @@ export interface MediaUpdate {
   currentEpisode?: number;
   imageUrl?: string;
   tags?: string;
+  startDate?: string;
+  endDate?: string;
 }

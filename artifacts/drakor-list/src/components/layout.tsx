@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Tv, BookOpen, Clapperboard, MonitorPlay, LayoutDashboard, BarChart2 } from "lucide-react";
+import { Tv, BookOpen, Clapperboard, MonitorPlay, LayoutDashboard, BarChart2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { path: "/short-dracin", label: "Short Dracin", icon: Clapperboard },
   { path: "/indo",         label: "Indo",         icon: MonitorPlay },
   { path: "/stats",        label: "Statistik",    icon: BarChart2 },
+  { path: "/search",       label: "Cari",         icon: Search },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -67,12 +68,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      {/* ── Mobile bottom nav ── */}
+      {/* ── Mobile bottom nav (exclude Cari — accessible via sidebar on desktop) ── */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 flex items-center z-50"
         style={{ height: 54, background: "hsl(228,22%,6%)", borderTop: "1px solid hsl(228,18%,13%)" }}
       >
-        {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+        {NAV_ITEMS.filter(n => n.path !== "/search").map(({ path, label, icon: Icon }) => {
           const active = location === path;
           // Short labels for cramped bottom nav
           const shortLabel: Record<string, string> = {
@@ -82,6 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             "Short Dracin": "Dracin",
             "Indo": "Indo",
             "Statistik": "Stats",
+            "Cari": "Cari",
           };
           return (
             <Link key={path} href={path} style={{ textDecoration: "none", flex: 1, minWidth: 0 }}>
