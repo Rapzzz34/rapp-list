@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListMedia, useCreateMedia, useUpdateMedia, useDeleteMedia, useListGenres, useBulkImportMedia,
+  useAnalyzeMedia,
   getListMediaQueryKey, getListGenresQueryKey, getGetMediaStatsQueryKey, getGetDetailedStatsQueryKey,
 } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Search, Plus, Pencil, Trash2, CheckCircle2, Play, Clock, XCircle, Star, ChevronRight, Download, Upload, Share2, ArrowUpDown, Shuffle, LayoutList, LayoutGrid, X } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, CheckCircle2, Play, Clock, XCircle, Star, ChevronRight, Download, Upload, Share2, ArrowUpDown, Shuffle, LayoutList, LayoutGrid, X, Sparkles, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -494,6 +495,131 @@ function ShareCardDialog({ item, open, onClose }: { item: Item; open: boolean; o
   );
 }
 
+/* ── AI Analyze Dialog ── */
+function AnalyzeDialog({ item, open, onClose }: {
+  item: Item; open: boolean; onClose: () => void;
+}) {
+  const { data, isFetching, isError, refetch } = useAnalyzeMedia(item.id, {
+    query: { enabled: false, retry: false },
+  });
+
+  useEffect(() => {
+    if (open) refetch();
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const mainCast  = data?.cast?.filter(c => c.role === "main")        ?? [];
+  const suppCast  = data?.cast?.filter(c => c.role !== "main")        ?? [];
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent style={{
+        background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)",
+        borderRadius: 14, maxWidth: 480, maxHeight: "85vh", overflowY: "auto",
+      }}>
+        <DialogHeader>
+          <DialogTitle style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 15, color: "hsl(252,70%,78%)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Sparkles className="w-4 h-4" style={{ color: "hsl(252,70%,65%)" }} />
+            Info AI — {item.title}
+          </DialogTitle>
+        </DialogHeader>
+
+        {isFetching ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "32px 0" }}>
+            <Loader2 className="w-7 h-7 animate-spin" style={{ color: "hsl(252,70%,65%)" }} />
+            <p style={{ fontSize: 13, color: "hsl(220,12%,42%)", fontFamily: "'Inter',sans-serif" }}>
+              Menganalisis dengan AI…
+            </p>
+          </div>
+        ) : isError ? (
+          <div style={{ padding: "20px 0", textAlign: "center" }}>
+            <p style={{ fontSize: 13, color: "hsl(0,60%,60%)", marginBottom: 12 }}>Gagal mendapatkan info AI.</p>
+            <button onClick={() => refetch()} className="btn-outline" style={{ fontSize: 12 }}>
+              Coba lagi
+            </button>
+          </div>
+        ) : data ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 4 }}>
+
+            {/* Meta pills */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {data.year && (
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "hsla(252,70%,55%,0.1)", border: "1px solid hsla(252,70%,55%,0.25)", color: "hsl(252,70%,72%)", fontWeight: 600 }}>
+                  {data.year}
+                </span>
+              )}
+              {data.country && (
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "hsla(214,80%,55%,0.08)", border: "1px solid hsla(214,80%,55%,0.2)", color: "hsl(214,80%,72%)", fontWeight: 500 }}>
+                  {data.country}
+                </span>
+              )}
+              {data.platform && (
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "hsla(155,60%,45%,0.08)", border: "1px solid hsla(155,60%,45%,0.2)", color: "hsl(155,60%,65%)", fontWeight: 500 }}>
+                  {data.platform}
+                </span>
+              )}
+              {data.totalEpisodes != null && (
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", fontWeight: 500 }}>
+                  {data.totalEpisodes} ep
+                </span>
+              )}
+            </div>
+
+            {/* Synopsis */}
+            {data.synopsis && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "hsl(252,70%,55%)", textTransform: "uppercase", marginBottom: 6 }}>Sinopsis</p>
+                <p style={{ fontSize: 13, lineHeight: 1.65, color: "hsl(220,12%,60%)", fontFamily: "'Inter',sans-serif" }}>
+                  {data.synopsis}
+                </p>
+              </div>
+            )}
+
+            {/* Cast */}
+            {data.cast && data.cast.length > 0 && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "hsl(252,70%,55%)", textTransform: "uppercase", marginBottom: 8 }}>Pemeran</p>
+
+                {mainCast.length > 0 && (
+                  <div style={{ marginBottom: suppCast.length > 0 ? 8 : 0 }}>
+                    <p style={{ fontSize: 9, fontWeight: 700, color: "hsl(220,12%,35%)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>Utama</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {mainCast.map((c, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "hsla(252,70%,55%,0.06)", border: "1px solid hsla(252,70%,55%,0.12)" }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(220,18%,85%)", fontFamily: "'Sora',sans-serif" }}>{c.name}</span>
+                          <span style={{ fontSize: 11, color: "hsl(220,12%,48%)" }}>{c.actor}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {suppCast.length > 0 && (
+                  <div>
+                    <p style={{ fontSize: 9, fontWeight: 700, color: "hsl(220,12%,35%)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5, marginTop: mainCast.length > 0 ? 4 : 0 }}>Pendukung</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {suppCast.map((c, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 10px", borderRadius: 8, background: "hsla(255,100%,100%,0.03)", border: "1px solid hsl(228,18%,17%)" }}>
+                          <span style={{ fontSize: 11, fontWeight: 500, color: "hsl(220,12%,65%)" }}>{c.name}</span>
+                          <span style={{ fontSize: 10, color: "hsl(220,12%,40%)" }}>{c.actor}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Disclaimer */}
+            <p style={{ fontSize: 10, color: "hsl(220,12%,30%)", fontStyle: "italic", marginTop: 4, fontFamily: "'Inter',sans-serif" }}>
+              ⚠ Data dihasilkan oleh AI dan mungkin tidak 100% akurat.
+            </p>
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /* ── Bulk Import Dialog ── */
 function BulkImportDialog({ open, onClose, category, onDone }: {
   open: boolean; onClose: () => void; category: string; onDone: () => void;
@@ -559,13 +685,14 @@ function BulkImportDialog({ open, onClose, category, onDone }: {
 }
 
 /* ── Media row card ── */
-function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp, onShare, onTagClick }: {
+function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp, onShare, onAnalyze, onTagClick }: {
   item: Item;
   onEdit: () => void;
   onDelete: () => void;
   onStatus: (s: Status) => void;
   onEpisodeUp: () => void;
   onShare: () => void;
+  onAnalyze: () => void;
   onTagClick?: (tag: string) => void;
 }) {
   const st = (item.status as Status) in STATUS_CONFIG ? item.status as Status : "plan-to-watch";
@@ -640,6 +767,16 @@ function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp, onShare, onTa
 
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+            <button
+              onClick={onAnalyze}
+              data-testid={`button-analyze-${item.id}`}
+              title="Info AI (cast, sinopsis, platform)"
+              style={{ width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", background: "hsla(252,70%,55%,0.07)", border: "1px solid hsla(252,70%,55%,0.2)", color: "hsl(252,70%,62%)", cursor: "pointer", transition: "all 150ms" }}
+              onMouseEnter={e => { const el = e.currentTarget; el.style.background = "hsla(252,70%,55%,0.18)"; el.style.borderColor = "hsla(252,70%,55%,0.5)"; el.style.color = "hsl(252,70%,78%)"; }}
+              onMouseLeave={e => { const el = e.currentTarget; el.style.background = "hsla(252,70%,55%,0.07)"; el.style.borderColor = "hsla(252,70%,55%,0.2)"; el.style.color = "hsl(252,70%,62%)"; }}
+            >
+              <Sparkles className="w-3 h-3" />
+            </button>
             <button
               onClick={onShare}
               data-testid={`button-share-${item.id}`}
@@ -780,6 +917,7 @@ export function CategoryList({ category, title }: { category: string; title: str
   const [editItem,    setEditItem]    = useState<Item | null>(null);
   const [delItem,     setDelItem]     = useState<Item | null>(null);
   const [shareItem,   setShareItem]   = useState<Item | null>(null);
+  const [analyzeItem, setAnalyzeItem] = useState<Item | null>(null);
   const [bulkOpen,    setBulkOpen]    = useState(false);
   const [viewMode,    setViewMode]    = useState<"list"|"grid">("list");
   const [ratingMin,   setRatingMin]   = useState<number|null>(null);
@@ -1134,6 +1272,13 @@ export function CategoryList({ category, title }: { category: string; title: str
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: 5, marginTop: "auto", paddingTop: 6 }}>
                     <button
+                      onClick={() => setAnalyzeItem(it)}
+                      title="Info AI"
+                      style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", background: "hsla(252,70%,55%,0.07)", border: "1px solid hsla(252,70%,55%,0.2)", color: "hsl(252,70%,62%)", cursor: "pointer", flexShrink: 0 }}
+                    >
+                      <Sparkles className="w-2.5 h-2.5" />
+                    </button>
+                    <button
                       onClick={() => openEdit(it)}
                       style={{ flex: 1, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,52%)", cursor: "pointer", fontSize: 10, fontWeight: 500, fontFamily: "'Inter',sans-serif" }}
                     >
@@ -1162,6 +1307,7 @@ export function CategoryList({ category, title }: { category: string; title: str
               onStatus={s => handleStatus(item as Item, s)}
               onEpisodeUp={() => handleEpisodeUp(item as Item)}
               onShare={() => setShareItem(item as Item)}
+              onAnalyze={() => setAnalyzeItem(item as Item)}
               onTagClick={tag => setTagFilter(tag)}
             />
           ))}
@@ -1182,6 +1328,14 @@ export function CategoryList({ category, title }: { category: string; title: str
           item={shareItem}
           open={!!shareItem}
           onClose={() => setShareItem(null)}
+        />
+      )}
+
+      {analyzeItem && (
+        <AnalyzeDialog
+          item={analyzeItem}
+          open={!!analyzeItem}
+          onClose={() => setAnalyzeItem(null)}
         />
       )}
 

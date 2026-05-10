@@ -14,6 +14,8 @@ export * from "./errorEnvelope";
 export * from "./genreStat";
 export * from "./healthStatus";
 export * from "./listMediaParams";
+export * from "./mediaAnalysis";
+export * from "./mediaAnalysisCastItem";
 export * from "./mediaInput";
 export * from "./mediaItem";
 export * from "./mediaStats";

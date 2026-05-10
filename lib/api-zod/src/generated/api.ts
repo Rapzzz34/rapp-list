@@ -160,6 +160,34 @@ export const DeleteMediaParams = zod.object({
 });
 
 /**
+ * @summary AI analysis — cast, synopsis, platform for a media item
+ */
+export const AnalyzeMediaParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AnalyzeMediaResponse = zod.object({
+  title: zod.string(),
+  category: zod.string(),
+  synopsis: zod
+    .string()
+    .describe("2-3 kalimat sinopsis dalam Bahasa Indonesia"),
+  cast: zod.array(
+    zod.object({
+      name: zod.string().describe("Nama karakter"),
+      actor: zod.string().describe("Nama aktor\/aktris"),
+      role: zod.string().describe("main | supporting"),
+    }),
+  ),
+  platform: zod
+    .string()
+    .describe("Platform streaming (Netflix, Viki, WeTV, dll)"),
+  year: zod.string(),
+  country: zod.string(),
+  totalEpisodes: zod.number().optional(),
+});
+
+/**
  * @summary Get summary stats by category and status
  */
 export const GetMediaStatsResponse = zod.object({

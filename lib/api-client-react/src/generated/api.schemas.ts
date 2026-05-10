@@ -5,6 +5,28 @@
  * Drakor & Webtoon List API
  * OpenAPI spec version: 0.1.0
  */
+export type MediaAnalysisCastItem = {
+  /** Nama karakter */
+  name: string;
+  /** Nama aktor/aktris */
+  actor: string;
+  /** main | supporting */
+  role: string;
+};
+
+export interface MediaAnalysis {
+  title: string;
+  category: string;
+  /** 2-3 kalimat sinopsis dalam Bahasa Indonesia */
+  synopsis: string;
+  cast: MediaAnalysisCastItem[];
+  /** Platform streaming (Netflix, Viki, WeTV, dll) */
+  platform: string;
+  year: string;
+  country: string;
+  totalEpisodes?: number;
+}
+
 export interface HealthStatus {
   status: string;
 }

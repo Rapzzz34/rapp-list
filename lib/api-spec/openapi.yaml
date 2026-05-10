@@ -138,6 +138,29 @@ paths:
         "404":
           description: Not found
 
+  /media/{id}/analyze:
+    get:
+      operationId: analyzeMedia
+      tags: [media]
+      summary: AI analysis — cast, synopsis, platform for a media item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: AI analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAnalysis"
+        "404":
+          description: Not found
+        "503":
+          description: AI unavailable
+
   /media/stats/summary:
     get:
       operationId: getMediaStats
@@ -271,6 +294,42 @@ paths:
 
 components:
   schemas:
+    MediaAnalysis:
+      type: object
+      required: [title, category, synopsis, cast, platform, year, country]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        synopsis:
+          type: string
+          description: 2-3 kalimat sinopsis dalam Bahasa Indonesia
+        cast:
+          type: array
+          items:
+            type: object
+            required: [name, actor, role]
+            properties:
+              name:
+                type: string
+                description: Nama karakter
+              actor:
+                type: string
+                description: Nama aktor/aktris
+              role:
+                type: string
+                description: main | supporting
+        platform:
+          type: string
+          description: Platform streaming (Netflix, Viki, WeTV, dll)
+        year:
+          type: string
+        country:
+          type: string
+        totalEpisodes:
+          type: integer
+
     HealthStatus:
       type: object
       properties:

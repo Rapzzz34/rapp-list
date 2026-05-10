@@ -23,6 +23,7 @@ import type {
   ErrorEnvelope,
   HealthStatus,
   ListMediaParams,
+  MediaAnalysis,
   MediaInput,
   MediaItem,
   MediaStats,
@@ -551,6 +552,93 @@ export const useDeleteMedia = <
 > => {
   return useMutation(getDeleteMediaMutationOptions(options));
 };
+
+/**
+ * @summary AI analysis — cast, synopsis, platform for a media item
+ */
+export const getAnalyzeMediaUrl = (id: number) => {
+  return `/api/media/${id}/analyze`;
+};
+
+export const analyzeMedia = async (
+  id: number,
+  options?: RequestInit,
+): Promise<MediaAnalysis> => {
+  return customFetch<MediaAnalysis>(getAnalyzeMediaUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAnalyzeMediaQueryKey = (id: number) => {
+  return [`/api/media/${id}/analyze`] as const;
+};
+
+export const getAnalyzeMediaQueryOptions = <
+  TData = Awaited<ReturnType<typeof analyzeMedia>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof analyzeMedia>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAnalyzeMediaQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof analyzeMedia>>> = ({
+    signal,
+  }) => analyzeMedia(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof analyzeMedia>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AnalyzeMediaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeMedia>>
+>;
+export type AnalyzeMediaQueryError = ErrorType<void>;
+
+/**
+ * @summary AI analysis — cast, synopsis, platform for a media item
+ */
+
+export function useAnalyzeMedia<
+  TData = Awaited<ReturnType<typeof analyzeMedia>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof analyzeMedia>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAnalyzeMediaQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get summary stats by category and status
