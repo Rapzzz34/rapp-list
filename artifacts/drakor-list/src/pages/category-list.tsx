@@ -745,12 +745,12 @@ export function CategoryList({ category, title }: { category: string; title: str
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-20 md:pb-0 animate-in fade-in duration-300">
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, paddingTop: 4 }}>
-        <div>
-          <h1 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.5px", color: "hsl(220,18%,91%)", marginBottom: 4, lineHeight: 1.1 }}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" style={{ paddingTop: 4 }}>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl" style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, letterSpacing: "-0.5px", color: "hsl(220,18%,91%)", marginBottom: 4, lineHeight: 1.15 }}>
             {title}<span className="glow-text">.</span>
           </h1>
-          <div style={{ display: "flex", gap: 8, fontSize: 12, color: "hsl(220,12%,42%)", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 6, fontSize: 12, color: "hsl(220,12%,42%)", flexWrap: "wrap", alignItems: "center" }}>
             <span>{cnt.total} total</span>
             {cnt.watch   > 0 && <><span>·</span><span style={{ color: "hsl(155,60%,58%)" }}>{cnt.watch} watching</span></>}
             {cnt.done    > 0 && <><span>·</span><span style={{ color: "hsl(252,70%,72%)" }}>{cnt.done} selesai</span></>}
@@ -758,16 +758,16 @@ export function CategoryList({ category, title }: { category: string; title: str
             {cnt.dropped > 0 && <><span>·</span><span style={{ color: "hsl(220,10%,45%)" }}>{cnt.dropped} dropped</span></>}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div className="flex gap-2 items-center flex-shrink-0">
           <button onClick={() => setBulkOpen(true)} title="Import massal"
-            style={{ height: 32, padding: "0 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Inter',sans-serif" }}>
+            style={{ height: 32, padding: "0 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap" }}>
             <Upload className="w-3 h-3" />Import
           </button>
           <button onClick={handleExport} title="Export JSON"
-            style={{ height: 32, padding: "0 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Inter',sans-serif" }}>
+            style={{ height: 32, padding: "0 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap" }}>
             <Download className="w-3 h-3" />Export
           </button>
-          <button onClick={openAdd} className="btn-primary" data-testid="button-add">
+          <button onClick={openAdd} className="btn-primary" data-testid="button-add" style={{ whiteSpace: "nowrap" }}>
             <Plus className="w-3.5 h-3.5" />Tambah
           </button>
         </div>
@@ -786,22 +786,22 @@ export function CategoryList({ category, title }: { category: string; title: str
       </div>
 
       {/* ── Status filter + Sort ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div className="flex items-start gap-2">
+        <div className="flex gap-1.5 flex-wrap flex-1">
           {([["all","Semua"], ["plan-to-watch","Mau Nonton"], ["watching","Lagi Nonton"], ["completed","Selesai"], ["dropped","Dropped"]] as const).map(([v, lbl]) => (
             <button key={v} onClick={() => setStatus(v)} className={cn("pill", status === v && "pill-active")} data-testid={`filter-status-${v}`}>
               {lbl}
             </button>
           ))}
         </div>
-        {/* Sort dropdown */}
-        <div style={{ position: "relative" }}>
+        {/* Sort dropdown — always flush right */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
           <button
             onClick={() => setSortOpen(o => !o)}
-            style={{ height: 28, padding: "0 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Inter',sans-serif" }}
+            style={{ height: 28, padding: "0 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "hsla(255,100%,100%,0.04)", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap" }}
           >
             <ArrowUpDown className="w-3 h-3" />
-            {currentSortLabel}
+            <span className="hidden sm:inline">{currentSortLabel}</span>
           </button>
           {sortOpen && (
             <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 50, background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,18%)", borderRadius: 10, overflow: "hidden", minWidth: 130, boxShadow: "0 8px 24px hsla(0,0%,0%,0.4)" }}>

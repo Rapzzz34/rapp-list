@@ -15,18 +15,18 @@ function StatCard({ label, value, sub, icon: Icon, color }: {
   icon: React.ElementType; color: string;
 }) {
   return (
-    <div className="surface" style={{ padding: "16px 18px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+    <div className="surface" style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10 }}>
       <div style={{
-        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+        width: 32, height: 32, borderRadius: 9, flexShrink: 0,
         background: `hsla(${color},0.12)`, border: `1px solid hsla(${color},0.25)`,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <Icon style={{ width: 16, height: 16, color: `hsl(${color})` }} />
+        <Icon style={{ width: 14, height: 14, color: `hsl(${color})` }} />
       </div>
-      <div>
-        <p style={{ fontSize: 11, fontWeight: 500, color: "hsl(220,12%,38%)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
-        <p style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 22, color: `hsl(${color})`, lineHeight: 1.1 }}>{value}</p>
-        {sub && <p style={{ fontSize: 11, color: "hsl(220,12%,35%)", marginTop: 2 }}>{sub}</p>}
+      <div className="min-w-0">
+        <p style={{ fontSize: 10, fontWeight: 500, color: "hsl(220,12%,38%)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+        <p className="text-lg sm:text-xl" style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, color: `hsl(${color})`, lineHeight: 1.15, wordBreak: "break-word" }}>{value}</p>
+        {sub && <p style={{ fontSize: 10, color: "hsl(220,12%,35%)", marginTop: 2, lineHeight: 1.3 }}>{sub}</p>}
       </div>
     </div>
   );
@@ -62,11 +62,11 @@ export function StatsPage() {
 
       {/* ── Stat cards ── */}
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-xl bg-muted/40" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           <StatCard
             label="Streak"
             value={`${data?.streak ?? 0} hari`}

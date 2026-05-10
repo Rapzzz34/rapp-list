@@ -417,7 +417,7 @@ export function Dashboard() {
           <Trophy style={{ width: 13, height: 13, color: "hsl(40,85%,62%)" }} />
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(220,12%,32%)" }}>Pencapaian</p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
           {ACHIEVEMENTS.map(a => {
             const unlocked = a.req(totalAll, totalDone, streak, hasTen);
             return (

@@ -62,26 +62,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── Page ── */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="min-h-full max-w-3xl mx-auto px-5 md:px-10 py-8">
+        <div className="min-h-full max-w-3xl mx-auto px-4 sm:px-6 md:px-10 py-5 sm:py-7 md:py-8">
           {children}
         </div>
       </main>
 
       {/* ── Mobile bottom nav ── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around z-50"
-        style={{ height: 56, background: "hsl(228,22%,6%)", borderTop: "1px solid hsl(228,18%,13%)" }}
+        className="md:hidden fixed bottom-0 left-0 right-0 flex items-center z-50"
+        style={{ height: 54, background: "hsl(228,22%,6%)", borderTop: "1px solid hsl(228,18%,13%)" }}
       >
         {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
           const active = location === path;
+          // Short labels for cramped bottom nav
+          const shortLabel: Record<string, string> = {
+            "Dashboard": "Home",
+            "K-Dramas": "Dramas",
+            "Webtoons": "Webtoon",
+            "Short Dracin": "Dracin",
+            "Indo": "Indo",
+            "Statistik": "Stats",
+          };
           return (
-            <Link key={path} href={path} style={{ textDecoration: "none", flex: 1 }}>
+            <Link key={path} href={path} style={{ textDecoration: "none", flex: 1, minWidth: 0 }}>
               <div
-                className="flex flex-col items-center justify-center h-full gap-1"
+                className="flex flex-col items-center justify-center h-full gap-0.5"
                 style={{ color: active ? "hsl(252,70%,72%)" : "hsl(220,12%,40%)" }}
               >
-                <Icon className="w-5 h-5" />
-                <span style={{ fontSize: 10, fontWeight: 500 }}>{label}</span>
+                <Icon className="w-[18px] h-[18px]" />
+                <span style={{ fontSize: 9, fontWeight: 500, lineHeight: 1, textAlign: "center", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {shortLabel[label] ?? label}
+                </span>
               </div>
             </Link>
           );
