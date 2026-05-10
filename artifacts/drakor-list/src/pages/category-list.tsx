@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Search, Plus, Pencil, Trash2, CheckCircle2, Play, Clock, XCircle, Star } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, CheckCircle2, Play, Clock, XCircle, Star, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -203,11 +203,12 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess }: {
 }
 
 /* ── Media row card ── */
-function ItemCard({ item, onEdit, onDelete, onStatus }: {
+function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp }: {
   item: Item;
   onEdit: () => void;
   onDelete: () => void;
   onStatus: (s: Status) => void;
+  onEpisodeUp: () => void;
 }) {
   const st = (item.status as Status) in STATUS_CONFIG ? item.status as Status : "plan-to-watch";
   const cfg = STATUS_CONFIG[st];
@@ -327,11 +328,35 @@ function ItemCard({ item, onEdit, onDelete, onStatus }: {
             </span>
           )}
 
-          {item.currentEpisode != null && item.totalEpisodes && (
-            <span style={{ fontSize: 12, color: "hsl(220,12%,42%)", marginLeft: "auto" }}>
-              Ep {item.currentEpisode}/{item.totalEpisodes}
-            </span>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+            {item.currentEpisode != null && item.totalEpisodes && (
+              <span style={{ fontSize: 12, color: "hsl(220,12%,42%)" }}>
+                Ep {item.currentEpisode}/{item.totalEpisodes}
+              </span>
+            )}
+            {/* +1 Ep button — only when watching and totalEpisodes is set */}
+            {st === "watching" && item.totalEpisodes != null && (
+              <button
+                onClick={onEpisodeUp}
+                data-testid={`button-episode-up-${item.id}`}
+                title={`Selesai nonton 1 episode`}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 3,
+                  padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  background: "hsla(155,60%,45%,0.1)",
+                  border: "1px solid hsla(155,60%,45%,0.3)",
+                  color: "hsl(155,60%,60%)",
+                  cursor: "pointer", transition: "all 150ms",
+                  fontFamily: "'Inter',sans-serif",
+                }}
+                onMouseEnter={e => { const el = e.currentTarget; el.style.background = "hsla(155,60%,45%,0.2)"; el.style.borderColor = "hsla(155,60%,45%,0.55)"; }}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.background = "hsla(155,60%,45%,0.1)"; el.style.borderColor = "hsla(155,60%,45%,0.3)"; }}
+              >
+                <ChevronRight className="w-3 h-3" />
+                +1 ep
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -404,6 +429,30 @@ export function CategoryList({ category, title }: { category: string; title: str
   async function handleStatus(item: Item, s: Status) {
     try { await updMedia.mutateAsync({ id: item.id, data: { status: s } }); inv(); }
     catch { toast({ title: "Gagal update status", variant: "destructive" }); }
+  }
+
+  async function handleEpisodeUp(item: Item) {
+    if (!item.totalEpisodes) return;
+    const current = item.currentEpisode ?? 0;
+    const next = current + 1;
+    const finished = next >= item.totalEpisodes;
+    try {
+      await updMedia.mutateAsync({
+        id: item.id,
+        data: {
+          currentEpisode: finished ? item.totalEpisodes : next,
+          ...(finished ? { status: "completed" } : {}),
+        },
+      });
+      inv();
+      if (finished) {
+        toast({ title: `🎉 Selesai! "${item.title}" tamat.` });
+      } else {
+        toast({ title: `Ep ${next}/${item.totalEpisodes} — ${item.title}`, duration: 2000 });
+      }
+    } catch {
+      toast({ title: "Gagal update episode", variant: "destructive" });
+    }
   }
 
   async function handleDelete() {
@@ -507,6 +556,7 @@ export function CategoryList({ category, title }: { category: string; title: str
               onEdit={() => openEdit(item as Item)}
               onDelete={() => setDelItem(item as Item)}
               onStatus={s => handleStatus(item as Item, s)}
+              onEpisodeUp={() => handleEpisodeUp(item as Item)}
             />
           ))}
         </div>
