@@ -13,9 +13,11 @@ export const mediaTable = pgTable("media", {
   totalEpisodes: integer("total_episodes"),
   currentEpisode: integer("current_episode"),
   imageUrl: text("image_url"),
+  tags: text("tags"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 });
 
-export const insertMediaSchema = createInsertSchema(mediaTable).omit({ id: true, createdAt: true });
+export const insertMediaSchema = createInsertSchema(mediaTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertMedia = z.infer<typeof insertMediaSchema>;
 export type Media = typeof mediaTable.$inferSelect;

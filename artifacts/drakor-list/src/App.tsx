@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { Dashboard } from "@/pages/dashboard";
 import { CategoryList } from "@/pages/category-list";
+import { StatsPage } from "@/pages/stats";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ function AppRouter() {
         <Route path="/indo">
           {() => <CategoryList category="indo" title="Indonesian" />}
         </Route>
+        <Route path="/stats" component={StatsPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -42,7 +44,6 @@ function AppRouter() {
 }
 
 function App() {
-  // Force dark mode
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);

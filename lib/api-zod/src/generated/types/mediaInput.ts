@@ -17,4 +17,5 @@ export interface MediaInput {
   totalEpisodes?: number;
   currentEpisode?: number;
   imageUrl?: string;
+  tags?: string;
 }

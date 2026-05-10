@@ -38,7 +38,9 @@ export const ListMediaResponseItem = zod.object({
   totalEpisodes: zod.number().nullish(),
   currentEpisode: zod.number().nullish(),
   imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
+  tags: zod.string().nullish().describe("Comma-separated custom tags"),
   createdAt: zod.string(),
+  updatedAt: zod.string().nullish(),
 });
 export const ListMediaResponse = zod.array(ListMediaResponseItem);
 
@@ -56,6 +58,7 @@ export const CreateMediaBody = zod.object({
   totalEpisodes: zod.number().optional(),
   currentEpisode: zod.number().optional(),
   imageUrl: zod.string().optional(),
+  tags: zod.string().optional(),
 });
 
 /**
@@ -78,7 +81,9 @@ export const GetMediaResponse = zod.object({
   totalEpisodes: zod.number().nullish(),
   currentEpisode: zod.number().nullish(),
   imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
+  tags: zod.string().nullish().describe("Comma-separated custom tags"),
   createdAt: zod.string(),
+  updatedAt: zod.string().nullish(),
 });
 
 /**
@@ -98,6 +103,7 @@ export const UpdateMediaBody = zod.object({
   totalEpisodes: zod.number().optional(),
   currentEpisode: zod.number().optional(),
   imageUrl: zod.string().optional(),
+  tags: zod.string().optional(),
 });
 
 export const UpdateMediaResponse = zod.object({
@@ -113,7 +119,9 @@ export const UpdateMediaResponse = zod.object({
   totalEpisodes: zod.number().nullish(),
   currentEpisode: zod.number().nullish(),
   imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
+  tags: zod.string().nullish().describe("Comma-separated custom tags"),
   createdAt: zod.string(),
+  updatedAt: zod.string().nullish(),
 });
 
 /**
@@ -138,6 +146,76 @@ export const GetMediaStatsResponse = zod.object({
       dropped: zod.number(),
     }),
   ),
+});
+
+/**
+ * @summary Get detailed stats — monthly completions, genres, streak, hours
+ */
+export const GetDetailedStatsResponse = zod.object({
+  monthly: zod.array(
+    zod.object({
+      month: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  genres: zod.array(
+    zod.object({
+      genre: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  avgRating: zod.number(),
+  totalEpisodes: zod.number(),
+  estimatedHours: zod.number(),
+  streak: zod.number(),
+});
+
+/**
+ * @summary Export all media items as JSON
+ */
+export const ExportMediaResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  category: zod.string().describe("drakor | webtoon | short-dracin | indo"),
+  genre: zod.string().nullish(),
+  status: zod
+    .string()
+    .describe("plan-to-watch | watching | completed | dropped"),
+  rating: zod.number().nullish().describe("1-10"),
+  notes: zod.string().nullish(),
+  totalEpisodes: zod.number().nullish(),
+  currentEpisode: zod.number().nullish(),
+  imageUrl: zod.string().nullish().describe("URL to poster\/cover image"),
+  tags: zod.string().nullish().describe("Comma-separated custom tags"),
+  createdAt: zod.string(),
+  updatedAt: zod.string().nullish(),
+});
+export const ExportMediaResponse = zod.array(ExportMediaResponseItem);
+
+/**
+ * @summary Bulk import media items from a list of titles
+ */
+
+export const BulkImportMediaBody = zod.object({
+  items: zod.array(
+    zod.object({
+      title: zod.string().min(1),
+      category: zod.string(),
+      genre: zod.string().optional(),
+      status: zod.string(),
+      rating: zod.number().optional(),
+      notes: zod.string().optional(),
+      totalEpisodes: zod.number().optional(),
+      currentEpisode: zod.number().optional(),
+      imageUrl: zod.string().optional(),
+      tags: zod.string().optional(),
+    }),
+  ),
+});
+
+export const BulkImportMediaResponse = zod.object({
+  created: zod.number(),
+  failed: zod.number(),
 });
 
 /**

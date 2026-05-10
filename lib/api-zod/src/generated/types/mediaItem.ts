@@ -31,5 +31,12 @@ export interface MediaItem {
    * @nullable
    */
   imageUrl?: string | null;
+  /**
+   * Comma-separated custom tags
+   * @nullable
+   */
+  tags?: string | null;
   createdAt: string;
+  /** @nullable */
+  updatedAt?: string | null;
 }

@@ -151,6 +151,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/MediaStats"
 
+  /media/stats/detailed:
+    get:
+      operationId: getDetailedStats
+      tags: [media]
+      summary: Get detailed stats — monthly completions, genres, streak, hours
+      responses:
+        "200":
+          description: Detailed stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetailedStats"
+
+  /media/export:
+    get:
+      operationId: exportMedia
+      tags: [media]
+      summary: Export all media items as JSON
+      responses:
+        "200":
+          description: All media items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaItem"
+
+  /media/bulk-import:
+    post:
+      operationId: bulkImportMedia
+      tags: [media]
+      summary: Bulk import media items from a list of titles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkImportRequest"
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkImportResult"
+
   /storage/uploads/request-url:
     post:
       tags: [Storage]
@@ -260,8 +307,13 @@ components:
         imageUrl:
           type: ["string", "null"]
           description: URL to poster/cover image
+        tags:
+          type: ["string", "null"]
+          description: Comma-separated custom tags
         createdAt:
           type: string
+        updatedAt:
+          type: ["string", "null"]
 
     MediaInput:
       type: object
@@ -286,6 +338,8 @@ components:
           type: integer
         imageUrl:
           type: string
+        tags:
+          type: string
 
     MediaUpdate:
       type: object
@@ -309,6 +363,65 @@ components:
           type: integer
         imageUrl:
           type: string
+        tags:
+          type: string
+
+    BulkImportRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaInput"
+
+    BulkImportResult:
+      type: object
+      required: [created, failed]
+      properties:
+        created:
+          type: integer
+        failed:
+          type: integer
+
+    DetailedStats:
+      type: object
+      required: [monthly, genres, avgRating, totalEpisodes, estimatedHours, streak]
+      properties:
+        monthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyStats"
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenreStat"
+        avgRating:
+          type: number
+        totalEpisodes:
+          type: integer
+        estimatedHours:
+          type: number
+        streak:
+          type: integer
+
+    MonthlyStats:
+      type: object
+      required: [month, count]
+      properties:
+        month:
+          type: string
+        count:
+          type: integer
+
+    GenreStat:
+      type: object
+      required: [genre, count]
+      properties:
+        genre:
+          type: string
+        count:
+          type: integer
 
     UploadUrlRequest:
       type: object

@@ -17,6 +17,9 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  BulkImportRequest,
+  BulkImportResult,
+  DetailedStats,
   ErrorEnvelope,
   HealthStatus,
   ListMediaParams,
@@ -623,6 +626,242 @@ export function useGetMediaStats<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get detailed stats — monthly completions, genres, streak, hours
+ */
+export const getGetDetailedStatsUrl = () => {
+  return `/api/media/stats/detailed`;
+};
+
+export const getDetailedStats = async (
+  options?: RequestInit,
+): Promise<DetailedStats> => {
+  return customFetch<DetailedStats>(getGetDetailedStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDetailedStatsQueryKey = () => {
+  return [`/api/media/stats/detailed`] as const;
+};
+
+export const getGetDetailedStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDetailedStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDetailedStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDetailedStatsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDetailedStats>>
+  > = ({ signal }) => getDetailedStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDetailedStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDetailedStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDetailedStats>>
+>;
+export type GetDetailedStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get detailed stats — monthly completions, genres, streak, hours
+ */
+
+export function useGetDetailedStats<
+  TData = Awaited<ReturnType<typeof getDetailedStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDetailedStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDetailedStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export all media items as JSON
+ */
+export const getExportMediaUrl = () => {
+  return `/api/media/export`;
+};
+
+export const exportMedia = async (
+  options?: RequestInit,
+): Promise<MediaItem[]> => {
+  return customFetch<MediaItem[]>(getExportMediaUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportMediaQueryKey = () => {
+  return [`/api/media/export`] as const;
+};
+
+export const getExportMediaQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportMedia>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportMedia>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportMediaQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportMedia>>> = ({
+    signal,
+  }) => exportMedia({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportMedia>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportMediaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportMedia>>
+>;
+export type ExportMediaQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export all media items as JSON
+ */
+
+export function useExportMedia<
+  TData = Awaited<ReturnType<typeof exportMedia>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportMedia>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportMediaQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Bulk import media items from a list of titles
+ */
+export const getBulkImportMediaUrl = () => {
+  return `/api/media/bulk-import`;
+};
+
+export const bulkImportMedia = async (
+  bulkImportRequest: BulkImportRequest,
+  options?: RequestInit,
+): Promise<BulkImportResult> => {
+  return customFetch<BulkImportResult>(getBulkImportMediaUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(bulkImportRequest),
+  });
+};
+
+export const getBulkImportMediaMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkImportMedia>>,
+    TError,
+    { data: BodyType<BulkImportRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof bulkImportMedia>>,
+  TError,
+  { data: BodyType<BulkImportRequest> },
+  TContext
+> => {
+  const mutationKey = ["bulkImportMedia"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof bulkImportMedia>>,
+    { data: BodyType<BulkImportRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return bulkImportMedia(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BulkImportMediaMutationResult = NonNullable<
+  Awaited<ReturnType<typeof bulkImportMedia>>
+>;
+export type BulkImportMediaMutationBody = BodyType<BulkImportRequest>;
+export type BulkImportMediaMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Bulk import media items from a list of titles
+ */
+export const useBulkImportMedia = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkImportMedia>>,
+    TError,
+    { data: BodyType<BulkImportRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof bulkImportMedia>>,
+  TError,
+  { data: BodyType<BulkImportRequest> },
+  TContext
+> => {
+  return useMutation(getBulkImportMediaMutationOptions(options));
+};
 
 /**
  * @summary Request a presigned URL for file upload

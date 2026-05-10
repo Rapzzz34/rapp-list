@@ -34,7 +34,14 @@ export interface MediaItem {
    * @nullable
    */
   imageUrl?: string | null;
+  /**
+   * Comma-separated custom tags
+   * @nullable
+   */
+  tags?: string | null;
   createdAt: string;
+  /** @nullable */
+  updatedAt?: string | null;
 }
 
 export interface MediaInput {
@@ -48,6 +55,7 @@ export interface MediaInput {
   totalEpisodes?: number;
   currentEpisode?: number;
   imageUrl?: string;
+  tags?: string;
 }
 
 export interface MediaUpdate {
@@ -61,6 +69,35 @@ export interface MediaUpdate {
   totalEpisodes?: number;
   currentEpisode?: number;
   imageUrl?: string;
+  tags?: string;
+}
+
+export interface BulkImportRequest {
+  items: MediaInput[];
+}
+
+export interface BulkImportResult {
+  created: number;
+  failed: number;
+}
+
+export interface MonthlyStats {
+  month: string;
+  count: number;
+}
+
+export interface GenreStat {
+  genre: string;
+  count: number;
+}
+
+export interface DetailedStats {
+  monthly: MonthlyStats[];
+  genres: GenreStat[];
+  avgRating: number;
+  totalEpisodes: number;
+  estimatedHours: number;
+  streak: number;
 }
 
 export interface UploadUrlRequest {

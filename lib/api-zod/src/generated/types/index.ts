@@ -6,13 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./bulkImportRequest";
+export * from "./bulkImportResult";
 export * from "./categoryStats";
+export * from "./detailedStats";
 export * from "./errorEnvelope";
+export * from "./genreStat";
 export * from "./healthStatus";
 export * from "./listMediaParams";
 export * from "./mediaInput";
 export * from "./mediaItem";
 export * from "./mediaStats";
 export * from "./mediaUpdate";
+export * from "./monthlyStats";
 export * from "./uploadUrlRequest";
 export * from "./uploadUrlResponse";

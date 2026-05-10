@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Tv, BookOpen, Clapperboard, MonitorPlay, LayoutDashboard } from "lucide-react";
+import { Tv, BookOpen, Clapperboard, MonitorPlay, LayoutDashboard, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { path: "/webtoon",      label: "Webtoons",     icon: BookOpen },
   { path: "/short-dracin", label: "Short Dracin", icon: Clapperboard },
   { path: "/indo",         label: "Indo",         icon: MonitorPlay },
+  { path: "/stats",        label: "Statistik",    icon: BarChart2 },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -26,10 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2.5">
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{
-                  background: "hsla(252,70%,65%,0.12)",
-                  border: "1px solid hsla(252,70%,65%,0.3)",
-                }}
+                style={{ background: "hsla(252,70%,65%,0.12)", border: "1px solid hsla(252,70%,65%,0.3)" }}
               >
                 <Tv className="w-3.5 h-3.5" style={{ color: "hsl(252,70%,72%)" }} />
               </div>
