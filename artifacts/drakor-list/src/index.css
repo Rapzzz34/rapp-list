@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -11,33 +11,24 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
   --color-card-border: hsl(var(--card-border));
-
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
   --color-popover-border: hsl(var(--popover-border));
-
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
-
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
-
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
-
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
-
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
-
   --font-sans: var(--app-font-sans);
   --font-display: var(--app-font-display);
-
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -46,134 +37,185 @@
 
 :root {
   --app-font-sans: 'Inter', sans-serif;
-  --app-font-display: 'Plus Jakarta Sans', sans-serif;
-  --radius: 0.625rem;
+  --app-font-display: 'Space Grotesk', sans-serif;
+  --radius: 0.5rem;
 
-  --background: 224 20% 8%;
-  --foreground: 220 15% 92%;
+  /* Deep dark — near black with subtle cool tint */
+  --background: 222 28% 6%;
+  --foreground: 210 20% 93%;
 
-  --border: 224 15% 16%;
-  --input: 224 15% 14%;
-  --ring: 245 55% 65%;
+  --border: 222 20% 13%;
+  --input: 222 20% 11%;
+  --ring: 185 80% 52%;
 
-  --card: 224 18% 11%;
-  --card-foreground: 220 15% 92%;
-  --card-border: 224 15% 16%;
+  /* Card: slightly lighter than bg, glass-like */
+  --card: 222 25% 9%;
+  --card-foreground: 210 20% 93%;
+  --card-border: 222 20% 14%;
 
-  --popover: 224 18% 10%;
-  --popover-foreground: 220 15% 92%;
-  --popover-border: 224 15% 16%;
+  --popover: 222 25% 8%;
+  --popover-foreground: 210 20% 93%;
+  --popover-border: 222 20% 14%;
 
-  --primary: 245 55% 65%;
-  --primary-foreground: 0 0% 100%;
+  /* Primary: neon cyan — the main accent */
+  --primary: 185 80% 52%;
+  --primary-foreground: 222 28% 6%;
 
-  --secondary: 224 15% 22%;
-  --secondary-foreground: 220 15% 85%;
+  /* Secondary: soft slate */
+  --secondary: 222 18% 18%;
+  --secondary-foreground: 210 15% 80%;
 
-  --muted: 224 15% 14%;
-  --muted-foreground: 220 10% 52%;
+  --muted: 222 20% 12%;
+  --muted-foreground: 220 12% 48%;
 
-  --accent: 245 40% 58%;
+  /* Accent: violet-purple */
+  --accent: 262 65% 62%;
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 60% 55%;
+  --destructive: 0 62% 52%;
   --destructive-foreground: 0 0% 100%;
 
-  --sidebar: 224 20% 7%;
-  --sidebar-foreground: 220 15% 80%;
-  --sidebar-border: 224 15% 14%;
-  --sidebar-ring: 245 55% 65%;
-  --sidebar-primary: 245 55% 65%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 224 15% 14%;
-  --sidebar-accent-foreground: 220 15% 85%;
+  --sidebar: 222 28% 5%;
+  --sidebar-foreground: 210 15% 75%;
+  --sidebar-border: 222 20% 11%;
+  --sidebar-primary: 185 80% 52%;
 }
 
 .dark {
-  --background: 224 20% 8%;
-  --foreground: 220 15% 92%;
-  --border: 224 15% 16%;
-  --input: 224 15% 14%;
-  --ring: 245 55% 65%;
-  --card: 224 18% 11%;
-  --card-foreground: 220 15% 92%;
-  --card-border: 224 15% 16%;
-  --popover: 224 18% 10%;
-  --popover-foreground: 220 15% 92%;
-  --popover-border: 224 15% 16%;
-  --primary: 245 55% 65%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 224 15% 22%;
-  --secondary-foreground: 220 15% 85%;
-  --muted: 224 15% 14%;
-  --muted-foreground: 220 10% 52%;
-  --accent: 245 40% 58%;
+  --background: 222 28% 6%;
+  --foreground: 210 20% 93%;
+  --border: 222 20% 13%;
+  --input: 222 20% 11%;
+  --ring: 185 80% 52%;
+  --card: 222 25% 9%;
+  --card-foreground: 210 20% 93%;
+  --card-border: 222 20% 14%;
+  --popover: 222 25% 8%;
+  --popover-foreground: 210 20% 93%;
+  --popover-border: 222 20% 14%;
+  --primary: 185 80% 52%;
+  --primary-foreground: 222 28% 6%;
+  --secondary: 222 18% 18%;
+  --secondary-foreground: 210 15% 80%;
+  --muted: 222 20% 12%;
+  --muted-foreground: 220 12% 48%;
+  --accent: 262 65% 62%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 60% 55%;
+  --destructive: 0 62% 52%;
   --destructive-foreground: 0 0% 100%;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
   body {
     @apply font-sans antialiased bg-background text-foreground;
     color-scheme: dark;
   }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight;
-  }
+  h1, h2, h3, h4, h5, h6 { @apply font-display tracking-tight; }
 }
 
+/* ─── Ambient background orbs ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 10% 20%, hsla(185,80%,52%,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 90% 80%, hsla(262,65%,62%,0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+#root { position: relative; z-index: 1; }
+
 @layer utilities {
-  .surface {
-    @apply bg-card border border-border rounded-lg;
-  }
-
-  .surface-hover {
-    @apply transition-colors duration-200 hover:bg-[hsl(224,18%,14%)] hover:border-[hsl(224,15%,22%)];
-  }
-
-  .accent-text {
-    @apply text-primary;
-  }
-
-  .neon-text-primary {
-    @apply text-primary;
-  }
-
-  .neon-text-secondary {
-    @apply text-[hsl(220,15%,75%)];
-  }
-
-  .glass {
-    @apply bg-card/80 backdrop-blur-sm border border-border;
-  }
-
+  /* ── Glass card ── */
   .glass-card {
-    @apply bg-card border border-border rounded-lg transition-all duration-200;
+    background: hsla(222,25%,9%,0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(222,20%,14%);
+    border-radius: var(--radius);
+    transition: border-color 200ms, box-shadow 200ms;
   }
-
   .glass-card:hover {
-    @apply border-[hsl(245,40%,40%)] bg-[hsl(224,18%,13%)];
+    border-color: hsla(185,80%,52%,0.35);
+    box-shadow: 0 0 24px -8px hsla(185,80%,52%,0.2);
   }
 
-  .neon-border {
-    @apply border-primary bg-primary/8;
+  /* ── Sidebar glass ── */
+  .sidebar-glass {
+    background: hsla(222,28%,5%,0.95);
+    backdrop-filter: blur(8px);
+    border-right: 1px solid hsl(222,20%,11%);
   }
 
-  /* Status colors — soft, readable, no glow */
+  /* ── Neon text ── */
+  .neon-text {
+    color: hsl(185,80%,52%);
+    text-shadow: 0 0 20px hsla(185,80%,52%,0.55);
+  }
+  .neon-text-violet {
+    color: hsl(262,65%,72%);
+    text-shadow: 0 0 18px hsla(262,65%,62%,0.45);
+  }
+
+  /* ── Neon border glow ── */
+  .neon-ring {
+    border-color: hsl(185,80%,52%);
+    box-shadow: 0 0 12px -2px hsla(185,80%,52%,0.5), inset 0 0 12px -4px hsla(185,80%,52%,0.15);
+  }
+
+  /* ── Active nav item ── */
+  .nav-active {
+    color: hsl(185,80%,52%);
+    background: hsla(185,80%,52%,0.07);
+    border-left: 2px solid hsl(185,80%,52%);
+    box-shadow: inset 0 0 20px -8px hsla(185,80%,52%,0.2);
+  }
+
+  /* ── Status badges — tinted but readable ── */
   .status-plan {
-    @apply bg-sky-950/60 text-sky-300 border-sky-800/50;
+    background: hsla(210,70%,50%,0.1);
+    color: hsl(210,70%,68%);
+    border-color: hsla(210,70%,50%,0.2);
   }
   .status-watching {
-    @apply bg-emerald-950/60 text-emerald-300 border-emerald-800/50;
+    background: hsla(160,65%,45%,0.1);
+    color: hsl(160,65%,62%);
+    border-color: hsla(160,65%,45%,0.2);
   }
   .status-completed {
-    @apply bg-violet-950/60 text-violet-300 border-violet-800/50;
+    background: hsla(262,65%,62%,0.12);
+    color: hsl(262,65%,75%);
+    border-color: hsla(262,65%,62%,0.25);
   }
   .status-dropped {
-    @apply bg-zinc-900/60 text-zinc-400 border-zinc-700/50;
+    background: hsla(220,10%,45%,0.1);
+    color: hsl(220,10%,55%);
+    border-color: hsla(220,10%,45%,0.2);
+  }
+
+  /* ── Neon button ── */
+  .btn-neon {
+    background: hsla(185,80%,52%,0.08);
+    color: hsl(185,80%,52%);
+    border: 1px solid hsla(185,80%,52%,0.35);
+    transition: all 200ms;
+  }
+  .btn-neon:hover {
+    background: hsla(185,80%,52%,0.15);
+    border-color: hsla(185,80%,52%,0.6);
+    box-shadow: 0 0 16px -4px hsla(185,80%,52%,0.4);
+  }
+
+  /* ── Filter pill active ── */
+  .pill-active {
+    background: hsla(185,80%,52%,0.1);
+    color: hsl(185,80%,60%);
+    border-color: hsla(185,80%,52%,0.4);
+  }
+  .pill-active-genre {
+    background: hsla(262,65%,62%,0.1);
+    color: hsl(262,65%,72%);
+    border-color: hsla(262,65%,62%,0.35);
   }
 }
