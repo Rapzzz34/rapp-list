@@ -44,7 +44,7 @@ export function Dashboard() {
       </div>
 
       {/* ── 4 stat pills ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
         {loadStats ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-20 rounded-xl bg-muted/40" />
