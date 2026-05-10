@@ -334,12 +334,12 @@ function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp }: {
                 Ep {item.currentEpisode}/{item.totalEpisodes}
               </span>
             )}
-            {/* +1 Ep button — only when watching and totalEpisodes is set */}
+            {/* Series: +1 ep — watching + ada totalEpisodes */}
             {st === "watching" && item.totalEpisodes != null && (
               <button
                 onClick={onEpisodeUp}
                 data-testid={`button-episode-up-${item.id}`}
-                title={`Selesai nonton 1 episode`}
+                title="Selesai nonton 1 episode"
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 3,
                   padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
@@ -354,6 +354,28 @@ function ItemCard({ item, onEdit, onDelete, onStatus, onEpisodeUp }: {
               >
                 <ChevronRight className="w-3 h-3" />
                 +1 ep
+              </button>
+            )}
+            {/* Movie: ✓ Selesai — watching + TIDAK ada totalEpisodes */}
+            {st === "watching" && item.totalEpisodes == null && (
+              <button
+                onClick={onEpisodeUp}
+                data-testid={`button-episode-up-${item.id}`}
+                title="Tandai sudah selesai ditonton"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 3,
+                  padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  background: "hsla(252,70%,60%,0.1)",
+                  border: "1px solid hsla(252,70%,60%,0.3)",
+                  color: "hsl(252,70%,75%)",
+                  cursor: "pointer", transition: "all 150ms",
+                  fontFamily: "'Inter',sans-serif",
+                }}
+                onMouseEnter={e => { const el = e.currentTarget; el.style.background = "hsla(252,70%,60%,0.2)"; el.style.borderColor = "hsla(252,70%,60%,0.55)"; }}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.background = "hsla(252,70%,60%,0.1)"; el.style.borderColor = "hsla(252,70%,60%,0.3)"; }}
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                Selesai
               </button>
             )}
           </div>
@@ -432,26 +454,34 @@ export function CategoryList({ category, title }: { category: string; title: str
   }
 
   async function handleEpisodeUp(item: Item) {
-    if (!item.totalEpisodes) return;
-    const current = item.currentEpisode ?? 0;
-    const next = current + 1;
-    const finished = next >= item.totalEpisodes;
+    const isMovie = item.totalEpisodes == null;
     try {
-      await updMedia.mutateAsync({
-        id: item.id,
-        data: {
-          currentEpisode: finished ? item.totalEpisodes : next,
-          ...(finished ? { status: "completed" } : {}),
-        },
-      });
-      inv();
-      if (finished) {
-        toast({ title: `🎉 Selesai! "${item.title}" tamat.` });
+      if (isMovie) {
+        // Movie: langsung selesai
+        await updMedia.mutateAsync({ id: item.id, data: { status: "completed" } });
+        inv();
+        toast({ title: `🎉 Selesai nonton "${item.title}"!` });
       } else {
-        toast({ title: `Ep ${next}/${item.totalEpisodes} — ${item.title}`, duration: 2000 });
+        // Series: naik 1 episode
+        const current = item.currentEpisode ?? 0;
+        const next = current + 1;
+        const finished = next >= item.totalEpisodes!;
+        await updMedia.mutateAsync({
+          id: item.id,
+          data: {
+            currentEpisode: finished ? item.totalEpisodes! : next,
+            ...(finished ? { status: "completed" } : {}),
+          },
+        });
+        inv();
+        if (finished) {
+          toast({ title: `🎉 Selesai! "${item.title}" tamat.` });
+        } else {
+          toast({ title: `Ep ${next}/${item.totalEpisodes} — ${item.title}`, duration: 2000 });
+        }
       }
     } catch {
-      toast({ title: "Gagal update episode", variant: "destructive" });
+      toast({ title: "Gagal update", variant: "destructive" });
     }
   }
 
