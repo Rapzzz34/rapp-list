@@ -389,7 +389,7 @@ function ShareCardDialog({ item, open, onClose }: { item: Item; open: boolean; o
           {/* ── Gambar ── */}
           <div style={{ padding: "10px 10px 8px" }}>
             <div style={{
-              width: "100%", height: 180,
+              width: "100%", aspectRatio: "2/3",
               borderRadius: 6, overflow: "hidden",
               background: "#cac5bc",
               boxShadow: "0 3px 14px rgba(0,0,0,0.32)",
