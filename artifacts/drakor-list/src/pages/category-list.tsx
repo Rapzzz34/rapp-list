@@ -334,56 +334,156 @@ function ItemDialog({ open, onOpenChange, item, category, title, onSuccess, exis
 function ShareCardDialog({ item, open, onClose }: { item: Item; open: boolean; onClose: () => void }) {
   const st = (item.status as Status) in STATUS_CONFIG ? item.status as Status : "plan-to-watch";
   const cfg = STATUS_CONFIG[st];
-  const Icon = cfg.icon;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const year = item.startDate ? item.startDate.slice(0, 4) : item.endDate ? item.endDate.slice(0, 4) : null;
+
+  async function handleDownload() {
+    if (!cardRef.current) return;
+    setDownloading(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true, backgroundColor: null });
+      const link = document.createElement("a");
+      link.download = `${item.title.replace(/\s+/g, "_")}_neonwatch.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch {
+      /* silent */
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  /* info rows shown at the bottom of the poster card */
+  const rows: { label: string; value: string }[] = [
+    { label: "genre",   value: item.genre  || "—" },
+    { label: "status",  value: cfg.label },
+    ...(item.totalEpisodes != null
+      ? [{ label: "episode", value: `${item.currentEpisode ?? 0} / ${item.totalEpisodes}` }]
+      : []),
+    ...(item.rating != null
+      ? [{ label: "rating",  value: `${item.rating} / 10 ⭐` }]
+      : []),
+    ...(item.tags ? [{ label: "tag", value: item.tags }] : []),
+  ];
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)", borderRadius: 14, maxWidth: 340 }}>
+      <DialogContent style={{ background: "hsl(228,22%,9%)", border: "1px solid hsl(228,18%,16%)", borderRadius: 16, maxWidth: 360, padding: "20px 20px 16px" }}>
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 15, color: "hsl(220,18%,88%)" }}>
-            Share Card
+          <DialogTitle style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 14, color: "hsl(220,18%,88%)" }}>
+            Share Poster
           </DialogTitle>
         </DialogHeader>
-        {/* Shareable card */}
-        <div id="share-card" style={{
-          borderRadius: 12, overflow: "hidden",
-          background: "linear-gradient(135deg, hsl(228,25%,10%), hsl(252,30%,14%))",
-          border: "1px solid hsla(252,70%,55%,0.3)",
-          padding: "20px",
-          display: "flex", gap: 14, alignItems: "flex-start",
+
+        {/* ── Poster card (screenshottable) ── */}
+        <div ref={cardRef} style={{
+          background: "#e9e5de",
+          borderRadius: 10,
+          overflow: "hidden",
+          fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
         }}>
-          {item.imageUrl && (
-            <img src={item.imageUrl} alt={item.title}
-              style={{ width: 60, height: 85, objectFit: "cover", borderRadius: 8, flexShrink: 0, border: "1px solid hsla(252,70%,55%,0.3)" }} />
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "hsl(252,70%,65%)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
-              NeonWatch
-            </p>
-            <p style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 16, color: "hsl(220,18%,92%)", lineHeight: 1.3, marginBottom: 8 }}>
-              {item.title}
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <Icon style={{ width: 12, height: 12, color: "hsl(252,70%,68%)" }} />
-              <span style={{ fontSize: 12, color: "hsl(252,70%,68%)", fontWeight: 500 }}>{cfg.label}</span>
-              {item.genre && <span style={{ fontSize: 11, color: "hsl(220,12%,48%)" }}>· {item.genre}</span>}
+          {/* ── Image frame ── */}
+          <div style={{ padding: "14px 14px 10px", background: "#e9e5de" }}>
+            <div style={{
+              width: "100%",
+              aspectRatio: "2/3",
+              overflow: "hidden",
+              borderRadius: 6,
+              background: "#c8c3bb",
+              position: "relative",
+              boxShadow: "0 4px 18px rgba(0,0,0,0.28)",
+            }}>
+              {item.imageUrl ? (
+                <img
+                  src={item.imageUrl}
+                  alt={item.title}
+                  crossOrigin="anonymous"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              ) : (
+                <div style={{
+                  width: "100%", height: "100%",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                  background: "linear-gradient(135deg, #d5d0c8, #c0bbb3)",
+                }}>
+                  <span style={{ fontSize: 42, fontWeight: 900, color: "rgba(80,70,60,0.18)", letterSpacing: 2 }}>
+                    {item.title.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()}
+                  </span>
+                  <span style={{ fontSize: 11, color: "rgba(80,70,60,0.35)", fontWeight: 500, letterSpacing: "0.08em" }}>NO POSTER</span>
+                </div>
+              )}
             </div>
-            {item.rating && (
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Star style={{ width: 11, height: 11, fill: "hsl(40,85%,62%)", color: "hsl(40,85%,62%)" }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: "hsl(40,85%,62%)" }}>{item.rating}/10</span>
-              </div>
-            )}
-            {item.totalEpisodes && (
-              <p style={{ fontSize: 11, color: "hsl(220,12%,40%)", marginTop: 4 }}>
-                Ep {item.currentEpisode ?? 0}/{item.totalEpisodes}
-              </p>
-            )}
+          </div>
+
+          {/* ── Info section ── */}
+          <div style={{ padding: "2px 16px 16px", background: "#e9e5de" }}>
+            {/* Title + year */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+              <span style={{
+                fontSize: 20, fontWeight: 900, letterSpacing: "-0.02em",
+                color: "#1a1814", lineHeight: 1.15, textTransform: "uppercase",
+                fontFamily: "'Sora', 'Inter', sans-serif",
+              }}>
+                {item.title}
+              </span>
+              {year && (
+                <span style={{ fontSize: 16, fontWeight: 400, color: "#8a8479", flexShrink: 0 }}>{year}</span>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div style={{ height: 1, background: "#c8c3bb", marginBottom: 10 }} />
+
+            {/* Info rows */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {rows.map(r => (
+                <div key={r.label} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "#8a8479", letterSpacing: "0.06em", textTransform: "lowercase", minWidth: 52, paddingTop: 1 }}>
+                    {r.label}
+                  </span>
+                  <span style={{ fontSize: 11, color: "#2e2b26", fontWeight: 500, lineHeight: 1.5, flex: 1 }}>{r.value}</span>
+                </div>
+              ))}
+              {/* Notes — separate block */}
+              {item.notes && (
+                <>
+                  <div style={{ height: 1, background: "#d0cbc4", margin: "4px 0" }} />
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "#8a8479", letterSpacing: "0.06em", textTransform: "lowercase", minWidth: 52, paddingTop: 1 }}>catatan</span>
+                    <span style={{ fontSize: 11, color: "#2e2b26", fontWeight: 400, lineHeight: 1.5, fontStyle: "italic", flex: 1 }}>{item.notes}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Branding */}
+            <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", color: "#8a8479", textTransform: "uppercase" }}>NeonWatch</span>
+            </div>
           </div>
         </div>
-        <p style={{ fontSize: 11, color: "hsl(220,12%,38%)", textAlign: "center", marginTop: 4 }}>
-          📸 Screenshot card di atas untuk di-share!
-        </p>
+
+        {/* ── Actions ── */}
+        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="btn-primary"
+            style={{ flex: 1, justifyContent: "center", gap: 6, fontSize: 12 }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            {downloading ? "Memproses..." : "Download Poster"}
+          </button>
+          <button
+            onClick={onClose}
+            style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "transparent", border: "1px solid hsl(228,18%,20%)", color: "hsl(220,12%,50%)", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}
+          >
+            Tutup
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );
