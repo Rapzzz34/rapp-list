@@ -5,7 +5,9 @@
  * Drakor & Webtoon List API
  * OpenAPI spec version: 0.1.0
  */
+import type { CategoryStats } from "./categoryStats";
 
-export interface HealthStatus {
-  status: string;
+export interface MediaStats {
+  totalAll: number;
+  categories: CategoryStats[];
 }

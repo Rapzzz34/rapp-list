@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Drakor & Webtoon List API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: media
+    description: Media list operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,145 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /media:
+    get:
+      operationId: listMedia
+      tags: [media]
+      summary: List all media items
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: genre
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of media items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaItem"
+    post:
+      operationId: createMedia
+      tags: [media]
+      summary: Create a new media item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+
+  /media/{id}:
+    get:
+      operationId: getMedia
+      tags: [media]
+      summary: Get a single media item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateMedia
+      tags: [media]
+      summary: Update a media item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUpdate"
+      responses:
+        "200":
+          description: Updated media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteMedia
+      tags: [media]
+      summary: Delete a media item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /media/stats/summary:
+    get:
+      operationId: getMediaStats
+      tags: [media]
+      summary: Get summary stats by category and status
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaStats"
+
+  /media/genres/list:
+    get:
+      operationId: listGenres
+      tags: [media]
+      summary: List all distinct genres used
+      responses:
+        "200":
+          description: Genre list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +174,101 @@ components:
       required:
         - status
 
+    MediaItem:
+      type: object
+      required: [id, title, category, status, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+          description: drakor | webtoon | short-dracin | indo
+        genre:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: plan-to-watch | watching | completed | dropped
+        rating:
+          type: ["integer", "null"]
+          description: 1-10
+        notes:
+          type: ["string", "null"]
+        totalEpisodes:
+          type: ["integer", "null"]
+        currentEpisode:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    MediaInput:
+      type: object
+      required: [title, category, status]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        category:
+          type: string
+        genre:
+          type: string
+        status:
+          type: string
+        rating:
+          type: integer
+        notes:
+          type: string
+        totalEpisodes:
+          type: integer
+        currentEpisode:
+          type: integer
+
+    MediaUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        category:
+          type: string
+        genre:
+          type: string
+        status:
+          type: string
+        rating:
+          type: integer
+        notes:
+          type: string
+        totalEpisodes:
+          type: integer
+        currentEpisode:
+          type: integer
+
+    CategoryStats:
+      type: object
+      required: [category, total, completed, watching, planToWatch, dropped]
+      properties:
+        category:
+          type: string
+        total:
+          type: integer
+        completed:
+          type: integer
+        watching:
+          type: integer
+        planToWatch:
+          type: integer
+        dropped:
+          type: integer
+
+    MediaStats:
+      type: object
+      required: [categories, totalAll]
+      properties:
+        totalAll:
+          type: integer
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryStats"

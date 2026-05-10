@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Drakor & Webtoon List"
+version = "1.0.0"
+id = "artifacts/drakor-list"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19793
+
+[services.development]
+run = "pnpm --filter @workspace/drakor-list run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/drakor-list", "run", "build" ]
+publicDir = "artifacts/drakor-list/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19793"
+BASE_PATH = "/"
